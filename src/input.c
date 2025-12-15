@@ -57,6 +57,8 @@ ControllerState *PollController()
         dpad_state |= 4 * SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
         dpad_state |= 8 * SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
 
+        printf(dpad_state);
+
         // For Buttons...
         controller_state.select_pressed = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_SOUTH);
         controller_state.back_pressed = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_EAST) || SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_START);
@@ -144,4 +146,5 @@ void _parseDirection()
         default:
             controller_state.direction = UNKNOWN; 
     }
+
 }
