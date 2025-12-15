@@ -90,7 +90,7 @@ ControllerState *PollController()
     
     _parseDirection();
 
-    print(controller_state.direction);
+    printf("%d\n", controller_state.direction);
 
     return &controller_state;
 }
@@ -148,4 +148,5 @@ void _parseDirection()
     }
 
 }
+
 
