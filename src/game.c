@@ -85,8 +85,6 @@ void _updateGame(ControllerState *cs)
     // No update if input has not changed
     if (cs->direction == prev_input.direction) return;
 
-    printf("%d\n", controller_state.direction);
-    
     if (cs->direction == gamestate.current_mode->pattern[ gamestate.player_pos % gamestate.current_mode->pattern_size ])
     {
         // Correct input
@@ -193,3 +191,4 @@ void _initGameModes()
     printf("Gamemodes Initialized.\n");
 
 }
+
