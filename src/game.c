@@ -75,7 +75,6 @@ void _updateGame(ControllerState *cs)
         gamestate.player_pos = 0;
         gamestate.score = 0;
         gamestate.last_input_acc = NONE;
-        prev_input = *cs;
         return;
     }
 
