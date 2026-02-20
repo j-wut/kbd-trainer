@@ -227,7 +227,7 @@ void _renderGame(SDL_Renderer *renderer)
     if (gamestate.last_input_acc == FAIL)
     {
         // First the arrow on the left
-        SDL_RenderTexture(renderer, direction_textures[ gamestate.last_input ], NULL, &failed_input_rect);
+        SDL_RenderTexture(renderer, direction_textures[ gamestate.prev_inputs[0].direction ], NULL, &failed_input_rect);
         SDL_RenderTexture(renderer, acc_textures[ gamestate.last_input_acc ], NULL, &failed_acc_rect);
         
         SDL_RenderPresent(renderer);
