@@ -211,7 +211,7 @@ SDL_FRect failed_acc_rect = {
     ACC_DISPLAY_HEIGHT
 };
 
-SDL_FRect[2] _get_input_history_rect(int index)
+SDL_FRect* _get_input_history_rect(int index)
 {
     return {
         {
@@ -248,7 +248,7 @@ void _renderGame(SDL_Renderer *renderer)
         SDL_FRect *rect = _get_input_history_rect(i);
         SDL_Texture *history_texture = direction_textures[gamestate.prev_inputs[i].direction];
         
-        char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)))
+        char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
         SDL_Surface *frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), scoreColor);
 
         SDL_Texture *frame_texture = SDL_CreateTextureFromSurface(renderer, surface)
