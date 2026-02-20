@@ -9,6 +9,8 @@
 #include "game.h"
 #include "input.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 
 int ViewWidth = INITIAL_VIEW_WIDTH; 
 int ViewHeight = INITIAL_VIEW_HEIGHT; 
@@ -168,7 +170,7 @@ void _renderMenu(SDL_Renderer *renderer)
 
 // ************* GAME RENDER ******************//
 SDL_FRect next_input_rect = {
-    SIDE_PADDING,
+    (ICON_WIDTH + SIDE_PADDING * 2) / 2,
     (INITIAL_VIEW_HEIGHT / 2) - (ICON_HEIGHT / 2),
     ICON_WIDTH,
     ICON_HEIGHT
@@ -209,6 +211,24 @@ SDL_FRect failed_acc_rect = {
     ACC_DISPLAY_HEIGHT
 };
 
+SDL_FRect[2] _get_input_history_rect(int index)
+{
+    return {
+        {
+            SIDE_PADDING/2,
+            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*index,
+            ICON_WIDTH/2,
+            ICON_HEIGHT/2
+        },
+        {
+            SIDE_PADDING/2 + (ICON_WIDTH/2 + SIDE_PADDING),
+            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*index,
+            ACC_DISPLAY_WIDTH - 30,
+            ACC_DISPLAY_HEIGHT
+        }
+    }
+}
+
 
 void _renderGame(SDL_Renderer *renderer) 
 {
@@ -222,6 +242,24 @@ void _renderGame(SDL_Renderer *renderer)
     _updateScore(renderer);
     SDL_RenderTexture(renderer, score_texture, NULL, &score_rect);
     SDL_RenderTexture(renderer, highscore_texture, NULL, &highscore_rect);
+
+    for (int i=0; i < gamestate.current_mode->pattern_size; i++) {
+
+        SDL_FRect *rect = _get_input_history_rect(i);
+        SDL_Texture *history_texture = direction_textures[gamestate.prev_inputs[i].direction];
+        
+        char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)))
+        SDL_Surface *frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), scoreColor);
+
+        SDL_Texture *frame_texture = SDL_CreateTextureFromSurface(renderer, surface)
+        SDL_DestroySurface(surface);
+
+
+        SDL_RenderTexture(renderer, history_texture, NULL, &rect[0]);
+        SDL_RenderTexture(renderer, frame_texture, NULL, &rect[1]);
+
+        SDL_DestroyTexture(frame_texture);
+    }
     
     // Success fail panel
     if (gamestate.last_input_acc == FAIL)
