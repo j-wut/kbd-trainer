@@ -18,7 +18,7 @@ int main()
     bool showGameView = false;
     
     // Frame timing
-    const Uint64 FRAME_DELAY = 2083333;
+    const Uint64 FRAME_DELAY = 16666666;
     Uint64 frameStart = 0;
     Uint64 frameTime = 0;    
     Uint64 prevFrame = 0;

@@ -21,6 +21,11 @@ typedef enum {
     FAIL
 } InputAccuracy;
 
+typedef struct {
+    GameDirection direction;
+    uint64_t frames;
+} GameInput;
+
 typedef struct{
     // current position in the pattern
     int player_pos;
@@ -31,7 +36,8 @@ typedef struct{
     GameDirection curr_input;
 
     InputAccuracy last_input_acc;
-    GameDirection last_input;
+
+    GameInput *prev_inputs;
     
     GameMode *current_mode;
     bool run_game;

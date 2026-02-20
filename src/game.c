@@ -15,7 +15,9 @@ void InitGame()
     _initGameModes();
     
     GameState initGS = {0};
-    initGS.current_mode = gamemodes; 
+    initGS.current_mode = gamemodes;
+    initGS.prev_inputs = calloc(gamemodes->pattern_size, sizeof(GameInput));
+
 
     gamestate = initGS;
 }
@@ -64,6 +66,7 @@ void _updateMenu(ControllerState *cs)
 
 void _updateGame(ControllerState *cs)
 {
+    print(gamestate.prev_inputs[0].frames);
     gamestate.curr_input = cs->direction;
     if (gamestate.last_input_acc == FAIL)
     {
@@ -79,14 +82,26 @@ void _updateGame(ControllerState *cs)
     {
         highscores[selected_mode] = gamestate.highscore;
         gamestate.run_game = false;
+        free(gamestate.prev_inputs);
         return;
     }
     
     // No update if input has not changed
-    if (cs->direction == prev_input.direction) return;
+    if (cs->direction == prev_input.direction) {
+        gamestate.prev_inputs[0].frames++;
+        return;
+    };
 
     if (cs->direction == gamestate.current_mode->pattern[ gamestate.player_pos % gamestate.current_mode->pattern_size ])
     {
+        GameInput *temp = malloc(gamestate.current_mode->pattern_size * sizeof(GameInput));
+        memcpy(temp, gamestate.prev_inputs, sizeof(GameInput)*gamestate.current_mode->pattern_size - 1);
+        memcpy(gamestate.prev_inputs[1], temp, sizeof(GameInput)*gamestate.current_mode->pattern_size - 1);
+        free(temp);
+
+        gamestate.prev_inputs[0].frames=1;
+        gamestate.prev_inputs[0].direction=cs->direction;
+
         // Correct input
         gamestate.score += 50;
         if (gamestate.score > gamestate.highscore)
@@ -99,7 +114,7 @@ void _updateGame(ControllerState *cs)
         
         prev_input.direction = cs->direction;
         
-        gamestate.last_input = cs->direction;
+        gamestate.prev_inputs[0].direction = cs->direction;
         gamestate.last_input_acc = SUCCESS;
     }
     else
@@ -109,7 +124,7 @@ void _updateGame(ControllerState *cs)
 
         if (gamestate.player_pos != 0)
         {
-            gamestate.last_input = cs->direction;
+            gamestate.prev_inputs[0].direction = cs->direction;
             gamestate.last_input_acc = FAIL;
         }
     }
@@ -122,7 +137,7 @@ void _startGame()
     gamestate.score = 0;
     gamestate.highscore = highscores[selected_mode];
 
-    gamestate.last_input = NEUTRAL;
+    gamestate.prev_inputs[0].direction = NEUTRAL;
     gamestate.last_input_acc = NONE;
     gamestate.run_game = true;
 }
