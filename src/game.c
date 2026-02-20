@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "game.h"
 #include "input.h"
@@ -66,7 +67,7 @@ void _updateMenu(ControllerState *cs)
 
 void _updateGame(ControllerState *cs)
 {
-    print(gamestate.prev_inputs[0].frames);
+    printf("direction: %d\tframes: %d\n", gamestate.prev_inputs[0].direction, gamestate.prev_inputs[0].frames);
     gamestate.curr_input = cs->direction;
     if (gamestate.last_input_acc == FAIL)
     {
@@ -96,7 +97,7 @@ void _updateGame(ControllerState *cs)
     {
         GameInput *temp = malloc(gamestate.current_mode->pattern_size * sizeof(GameInput));
         memcpy(temp, gamestate.prev_inputs, sizeof(GameInput)*gamestate.current_mode->pattern_size - 1);
-        memcpy(gamestate.prev_inputs[1], temp, sizeof(GameInput)*gamestate.current_mode->pattern_size - 1);
+        memcpy(&(gamestate.prev_inputs[1]), temp, sizeof(GameInput)*gamestate.current_mode->pattern_size - 1);
         free(temp);
 
         gamestate.prev_inputs[0].frames=1;
