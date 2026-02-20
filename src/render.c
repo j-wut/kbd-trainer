@@ -230,12 +230,12 @@ void _renderGame(SDL_Renderer *renderer)
         SDL_RenderTexture(renderer, direction_textures[ gamestate.last_input ], NULL, &failed_input_rect);
         SDL_RenderTexture(renderer, acc_textures[ gamestate.last_input_acc ], NULL, &failed_acc_rect);
         
-        // SDL_RenderPresent(renderer);
+        SDL_RenderPresent(renderer);
 
         // // Multiple delay calls to prevent Windows from "not responding"
-        // SDL_DelayPrecise(500000000);
-        // SDL_DelayPrecise(500000000);
-        // SDL_DelayPrecise(200000000);
+        SDL_DelayPrecise(500000000);
+        SDL_DelayPrecise(500000000);
+        SDL_DelayPrecise(200000000);
 
         // return;
     }
@@ -247,3 +247,4 @@ void _renderGame(SDL_Renderer *renderer)
 
     SDL_RenderPresent(renderer);
 }
+
