@@ -231,19 +231,9 @@ void _renderGame(SDL_Renderer *renderer)
 
     for (int i=0; i < gamestate.current_mode->pattern_size; i++) {
 
-        direction_rect = {
-            SIDE_PADDING/2,
-            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
-            ICON_WIDTH/2,
-            ICON_HEIGHT/2
-        };
+        direction_rect = {SIDE_PADDING/2, VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i, ICON_WIDTH/2, ICON_HEIGHT/2};
 
-        frame_rect = {
-            SIDE_PADDING/2,
-            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
-            ICON_WIDTH/2,
-            ICON_HEIGHT/2
-        };
+        frame_rect = {SIDE_PADDING/2, VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i, ICON_WIDTH/2, ICON_HEIGHT/2};
         
         frames = sprintf("%d", gamestate.prev_inputs[i].frames < 999 ? gamestate.prev_inputs[i].frames : 999);
         frame_surface = TTF_RenderText_Solid(score_font, frames, strlen(frames), frame_color);
