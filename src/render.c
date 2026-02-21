@@ -9,8 +9,6 @@
 #include "game.h"
 #include "input.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 
 int ViewWidth = INITIAL_VIEW_WIDTH; 
 int ViewHeight = INITIAL_VIEW_HEIGHT; 
