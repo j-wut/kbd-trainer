@@ -32,6 +32,11 @@ SDL_Texture *acc_textures[3];
 // Menu stuff
 SDL_Texture *menu_textures[GAME_MODE_COUNT];
 
+SDL_FRect direction_rect;
+SDL_FRect frame_rect;
+SDL_Texture *history_texture;
+SDL_Surface *frame_surface;
+SDL_Texture *frame_texture;
 
 
 // Initialize Textures
@@ -226,31 +231,29 @@ void _renderGame(SDL_Renderer *renderer)
 
     for (int i=0; i < gamestate.current_mode->pattern_size; i++) {
 
-        SDL_FRect *direction_rect = {
+        direction_rect = {
             SIDE_PADDING/2,
             VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
             ICON_WIDTH/2,
             ICON_HEIGHT/2
         };
 
-        SDL_FRect *frame_rect = {
+        frame_rect = {
             SIDE_PADDING/2,
             VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
             ICON_WIDTH/2,
             ICON_HEIGHT/2
         };
-
-        SDL_Texture *history_texture = direction_textures[gamestate.prev_inputs[i].direction];
         
         char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
-        SDL_Surface *frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), scoreColor);
+        frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), scoreColor);
 
-        SDL_Texture *frame_texture = SDL_CreateTextureFromSurface(renderer, surface)
+        frame_texture = SDL_CreateTextureFromSurface(renderer, surface)
         SDL_DestroySurface(surface);
 
 
-        SDL_RenderTexture(renderer, history_texture, NULL, direction_rect);
-        SDL_RenderTexture(renderer, frame_texture, NULL, frame_rect);
+        SDL_RenderTexture(renderer, direction_textures[gamestate.prev_inputs[i].direction], NULL, &direction_rect);
+        SDL_RenderTexture(renderer, frame_texture, NULL, &frame_rect);
 
         SDL_DestroyTexture(frame_texture);
     }
