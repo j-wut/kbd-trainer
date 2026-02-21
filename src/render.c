@@ -234,22 +234,21 @@ void _renderGame(SDL_Renderer *renderer)
         direction_rect.w=ICON_WIDTH/2;
         direction_rect.h=ICON_HEIGHT/2;
 
-        
         frame_rect.x=SIDE_PADDING + ICON_WIDTH/2;
         frame_rect.y=VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i;
         frame_rect.w=ACC_DISPLAY_WIDTH;
         frame_rect.h=ACC_DISPLAY_HEIGHT;
-        
+
         frames = sprintf("%d", gamestate.prev_inputs[i].frames < 999 ? gamestate.prev_inputs[i].frames : 999);
         frame_surface = TTF_RenderText_Solid(score_font, frames, strlen(frames), frame_color);
 
         frame_texture = SDL_CreateTextureFromSurface(renderer, frame_surface);
         SDL_DestroySurface(frame_surface);
 
-
         SDL_RenderTexture(renderer, direction_textures[gamestate.prev_inputs[i].direction], NULL, &direction_rect);
         SDL_RenderTexture(renderer, frame_texture, NULL, &frame_rect);
 
+        SDL_RenderPresent(renderer);
         SDL_DestroyTexture(frame_texture);
     }
     
