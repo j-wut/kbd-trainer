@@ -248,7 +248,7 @@ void _renderGame(SDL_Renderer *renderer)
         frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
         frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), frame_color);
 
-        frame_texture = SDL_CreateTextureFromSurface(renderer, frame_surface)
+        frame_texture = SDL_CreateTextureFromSurface(renderer, frame_surface);
         SDL_DestroySurface(frame_surface);
 
 
