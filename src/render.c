@@ -213,8 +213,8 @@ void _renderGame(SDL_Renderer *renderer)
 {
     SDL_RenderClear(renderer);
     SDL_Color frame_color = {255, 255, 255};
-    SDL_FRect direction_rect;
-    SDL_FRect frame_rect;
+    SDL_FRect direction_rect = {};
+    SDL_FRect frame_rect = {};
     SDL_Texture *history_texture;
     SDL_Surface *frame_surface;
     SDL_Texture *frame_texture;
@@ -231,9 +231,16 @@ void _renderGame(SDL_Renderer *renderer)
 
     for (int i=0; i < gamestate.current_mode->pattern_size; i++) {
 
-        direction_rect = {SIDE_PADDING/2, VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i, ICON_WIDTH/2, ICON_HEIGHT/2};
+        direction_rect.x=SIDE_PADDING/2;
+        direction_rect.y=VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i;
+        direction_rect.w=ICON_WIDTH/2;
+        direction_rect.h=ICON_HEIGHT/2;
 
-        frame_rect = {SIDE_PADDING/2, VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i, ICON_WIDTH/2, ICON_HEIGHT/2};
+        
+        frame_rect.x=SIDE_PADDING + ICON_WIDTH/2;
+        frame_rect.y=VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i;
+        frame_rect.w=ACC_DISPLAY_WIDTH;
+        frame_rect.h=ACC_DISPLAY_HEIGHT;
         
         frames = sprintf("%d", gamestate.prev_inputs[i].frames < 999 ? gamestate.prev_inputs[i].frames : 999);
         frame_surface = TTF_RenderText_Solid(score_font, frames, strlen(frames), frame_color);
