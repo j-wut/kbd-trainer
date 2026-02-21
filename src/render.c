@@ -211,25 +211,6 @@ SDL_FRect failed_acc_rect = {
     ACC_DISPLAY_HEIGHT
 };
 
-SDL_FRect* _get_input_history_rect(int index)
-{
-    return {
-        {
-            SIDE_PADDING/2,
-            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*index,
-            ICON_WIDTH/2,
-            ICON_HEIGHT/2
-        },
-        {
-            SIDE_PADDING/2 + (ICON_WIDTH/2 + SIDE_PADDING),
-            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*index,
-            ACC_DISPLAY_WIDTH - 30,
-            ACC_DISPLAY_HEIGHT
-        }
-    }
-}
-
-
 void _renderGame(SDL_Renderer *renderer) 
 {
     SDL_RenderClear(renderer);
@@ -245,7 +226,20 @@ void _renderGame(SDL_Renderer *renderer)
 
     for (int i=0; i < gamestate.current_mode->pattern_size; i++) {
 
-        SDL_FRect *rect = _get_input_history_rect(i);
+        SDL_FRect *direction_rect = {
+            SIDE_PADDING/2,
+            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
+            ICON_WIDTH/2,
+            ICON_HEIGHT/2
+        };
+
+        SDL_FRect *frame_rect = {
+            SIDE_PADDING/2,
+            VERT_PADDING/2 + (VERT_PADDING+ICON_HEIGHT/2)*i,
+            ICON_WIDTH/2,
+            ICON_HEIGHT/2
+        };
+
         SDL_Texture *history_texture = direction_textures[gamestate.prev_inputs[i].direction];
         
         char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
@@ -255,8 +249,8 @@ void _renderGame(SDL_Renderer *renderer)
         SDL_DestroySurface(surface);
 
 
-        SDL_RenderTexture(renderer, history_texture, NULL, &rect[0]);
-        SDL_RenderTexture(renderer, frame_texture, NULL, &rect[1]);
+        SDL_RenderTexture(renderer, history_texture, NULL, direction_rect);
+        SDL_RenderTexture(renderer, frame_texture, NULL, frame_rect);
 
         SDL_DestroyTexture(frame_texture);
     }
@@ -285,4 +279,3 @@ void _renderGame(SDL_Renderer *renderer)
 
     SDL_RenderPresent(renderer);
 }
-
