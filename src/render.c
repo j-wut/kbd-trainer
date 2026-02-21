@@ -32,13 +32,6 @@ SDL_Texture *acc_textures[3];
 // Menu stuff
 SDL_Texture *menu_textures[GAME_MODE_COUNT];
 
-SDL_FRect direction_rect;
-SDL_FRect frame_rect;
-SDL_Texture *history_texture;
-SDL_Surface *frame_surface;
-SDL_Texture *frame_texture;
-
-
 // Initialize Textures
 bool InitTextures(SDL_Renderer *renderer)
 {
@@ -219,6 +212,13 @@ SDL_FRect failed_acc_rect = {
 void _renderGame(SDL_Renderer *renderer) 
 {
     SDL_RenderClear(renderer);
+    SDL_Color frame_color = {255, 255, 255};
+    SDL_FRect direction_rect;
+    SDL_FRect frame_rect;
+    SDL_Texture *history_texture;
+    SDL_Surface *frame_surface;
+    SDL_Texture *frame_texture;
+    char *frames;
     
     // Render inputs
     SDL_Texture *nextInputTexture = direction_textures[ gamestate.current_mode->pattern[ gamestate.player_pos % gamestate.current_mode->pattern_size ] ];
@@ -245,11 +245,11 @@ void _renderGame(SDL_Renderer *renderer)
             ICON_HEIGHT/2
         };
         
-        char *frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
-        frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), scoreColor);
+        frames = sprintf("%d", ((gamestate.prev_inputs[i].frames) < (999) ? (gamestate.prev_inputs[i].frames) : (999)));
+        frame_surface = TTF_RenderText_Solid(score_font, sprintf(frames), strlen(frames), frame_color);
 
-        frame_texture = SDL_CreateTextureFromSurface(renderer, surface)
-        SDL_DestroySurface(surface);
+        frame_texture = SDL_CreateTextureFromSurface(renderer, frame_surface)
+        SDL_DestroySurface(frame_surface);
 
 
         SDL_RenderTexture(renderer, direction_textures[gamestate.prev_inputs[i].direction], NULL, &direction_rect);
