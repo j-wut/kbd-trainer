@@ -32,6 +32,10 @@ SDL_Texture *acc_textures[3];
 // Menu stuff
 SDL_Texture *menu_textures[GAME_MODE_COUNT];
 
+// Input history stuff: one texture per digit so frame counts can be drawn
+// every frame without making new textures
+SDL_Texture *digit_textures[10];
+
 
 
 // Assets live next to the executable, so the game runs from any working directory
@@ -86,6 +90,22 @@ bool InitTextures(SDL_Renderer *renderer)
     surface = TTF_RenderText_Solid(score_font, failText, strlen(failText), failColor);
     acc_textures[FAIL] = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_DestroySurface(surface);
+
+    // Build digit textures for the input history frame counts
+    SDL_Color digitColor = {255, 255, 255};
+    for (int i = 0; i < 10; i++)
+    {
+        char digit = '0' + i;
+        surface = TTF_RenderText_Solid(score_font, &digit, 1, digitColor);
+        digit_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_DestroySurface(surface);
+
+        if (digit_textures[i] == NULL)
+        {
+            printf("Error building digit texture: %s\n", SDL_GetError());
+            return false;
+        }
+    }
  
     return true;
 }
@@ -171,7 +191,8 @@ void _renderMenu(SDL_Renderer *renderer)
 {
     SDL_RenderClear(renderer);
     
-    SDL_FRect destRect = {SIDE_PADDING, INITIAL_VIEW_HEIGHT / 2 - ICON_HEIGHT / 2, INITIAL_VIEW_WIDTH - (SIDE_PADDING * 2), ICON_HEIGHT};
+    // Keep the mode name the same size as before, centered in the wider window
+    SDL_FRect destRect = {(INITIAL_VIEW_WIDTH - GAME_AREA_WIDTH) / 2 + SIDE_PADDING, INITIAL_VIEW_HEIGHT / 2 - ICON_HEIGHT / 2, GAME_AREA_WIDTH - (SIDE_PADDING * 2), ICON_HEIGHT};
     SDL_RenderTexture(renderer, menu_textures[selected_mode], NULL, &destRect);
     
     SDL_RenderPresent(renderer);
@@ -221,6 +242,58 @@ SDL_FRect failed_acc_rect = {
 };
 
 
+// Draws the most recent inputs, newest on top, each with how many frames it was held
+void _renderInputHistory(SDL_Renderer *renderer)
+{
+    const float panelX = GAME_AREA_WIDTH;
+
+    // Divider between the play area and the history
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
+    SDL_RenderLine(renderer, panelX - SIDE_PADDING / 2, VERT_PADDING, panelX - SIDE_PADDING / 2, INITIAL_VIEW_HEIGHT - VERT_PADDING);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    for (int row = 0; row < HISTORY_ROWS; row++)
+    {
+        const InputHistoryEntry *entry = GetInputHistoryEntry(row);
+        if (entry == NULL)
+            break;
+
+        float rowY = VERT_PADDING + row * HISTORY_ROW_HEIGHT;
+
+        // Direction icon (UNKNOWN / DISCONNECTED have no icon)
+        if (entry->direction >= NEUTRAL && entry->direction <= UP_BACK)
+        {
+            SDL_FRect iconRect = {
+                panelX,
+                rowY + (HISTORY_ROW_HEIGHT - HISTORY_ICON_SIZE) / 2,
+                HISTORY_ICON_SIZE,
+                HISTORY_ICON_SIZE
+            };
+            SDL_RenderTexture(renderer, direction_textures[entry->direction], NULL, &iconRect);
+        }
+
+        // Frame count, right aligned. Newest input is white, older ones grey.
+        char frames[8];
+        int len = snprintf(frames, sizeof(frames), "%d", entry->frames);
+        Uint8 shade = row == 0 ? 255 : 160;
+
+        float x = panelX + HISTORY_PANEL_WIDTH;
+        for (int i = len - 1; i >= 0; i--)
+        {
+            SDL_Texture *digit = digit_textures[frames[i] - '0'];
+            float w, h;
+            SDL_GetTextureSize(digit, &w, &h);
+
+            SDL_FRect digitRect = {0, rowY + (HISTORY_ROW_HEIGHT - HISTORY_DIGIT_HEIGHT) / 2, w * HISTORY_DIGIT_HEIGHT / h, HISTORY_DIGIT_HEIGHT};
+            x -= digitRect.w;
+            digitRect.x = x;
+
+            SDL_SetTextureColorMod(digit, shade, shade, shade);
+            SDL_RenderTexture(renderer, digit, NULL, &digitRect);
+        }
+    }
+}
+
 void _renderGame(SDL_Renderer *renderer) 
 {
     SDL_RenderClear(renderer);
@@ -233,6 +306,9 @@ void _renderGame(SDL_Renderer *renderer)
     _updateScore(renderer);
     SDL_RenderTexture(renderer, score_texture, NULL, &score_rect);
     SDL_RenderTexture(renderer, highscore_texture, NULL, &highscore_rect);
+
+    // Input history panel
+    _renderInputHistory(renderer);
     
     // Success fail panel
     if (gamestate.last_input_acc == FAIL)

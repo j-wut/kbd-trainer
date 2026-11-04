@@ -69,6 +69,8 @@ void _updateMenu(ControllerState *cs)
 void _updateGame(ControllerState *cs)
 {
     gamestate.curr_input = cs->direction;
+    _recordInput(cs->direction);
+
     if (gamestate.last_input_acc == FAIL)
     {
         // Reset after failure
@@ -128,7 +130,49 @@ void _startGame()
 
     gamestate.last_input = NEUTRAL;
     gamestate.last_input_acc = NONE;
+    _resetInputHistory();
     gamestate.run_game = true;
+}
+
+// ************* INPUT HISTORY ******************//
+// Update() runs once per frame, so counting calls here counts frames.
+
+void _resetInputHistory()
+{
+    InputHistory empty = {0};
+    gamestate.input_history = empty;
+}
+
+void _recordInput(GameDirection direction)
+{
+    InputHistory *h = &gamestate.input_history;
+    InputHistoryEntry *newest = &h->entries[h->head];
+
+    // Same direction as last frame: it's still being held
+    if (h->count > 0 && newest->direction == direction)
+    {
+        if (newest->frames < INPUT_HISTORY_MAX_FRAMES)
+            newest->frames += 1;
+        return;
+    }
+
+    // New direction: push a new entry, overwriting the oldest when full
+    if (h->count > 0)
+        h->head = (h->head + 1) % INPUT_HISTORY_SIZE;
+    if (h->count < INPUT_HISTORY_SIZE)
+        h->count += 1;
+
+    h->entries[h->head].direction = direction;
+    h->entries[h->head].frames = 1;
+}
+
+const InputHistoryEntry *GetInputHistoryEntry(int age)
+{
+    const InputHistory *h = &gamestate.input_history;
+    if (age < 0 || age >= h->count)
+        return NULL;
+
+    return &h->entries[(h->head - age + INPUT_HISTORY_SIZE) % INPUT_HISTORY_SIZE];
 }
 
 void DestroyGame()

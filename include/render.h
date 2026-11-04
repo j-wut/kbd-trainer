@@ -17,8 +17,18 @@
 #define ACC_DISPLAY_HEIGHT 30
 #define ACC_DISPLAY_WIDTH 100
 
-#define INITIAL_VIEW_WIDTH (ICON_WIDTH + SCORE_COUNTER_WIDTH + (SIDE_PADDING * 3))
+// Width of the original play area (next input + score), without the history panel
+#define GAME_AREA_WIDTH (ICON_WIDTH + SCORE_COUNTER_WIDTH + (SIDE_PADDING * 3))
 #define INITIAL_VIEW_HEIGHT (ICON_HEIGHT * 2 + VERT_PADDING * 2)
+
+// Input history panel, on the right side of the game view
+#define HISTORY_ROW_HEIGHT 20
+#define HISTORY_ICON_SIZE 18
+#define HISTORY_DIGIT_HEIGHT 16
+#define HISTORY_PANEL_WIDTH 70
+#define HISTORY_ROWS ((INITIAL_VIEW_HEIGHT - VERT_PADDING * 2) / HISTORY_ROW_HEIGHT)
+
+#define INITIAL_VIEW_WIDTH (GAME_AREA_WIDTH + HISTORY_PANEL_WIDTH + SIDE_PADDING)
 
 static const char * _directionAssets[9] = {
     [0] = "assets/n.bmp",
@@ -46,3 +56,4 @@ void _renderGame(SDL_Renderer *);
 void _playFailAnimation(SDL_Renderer *);
 
 void _updateScore(SDL_Renderer *rendrerer);
+void _renderInputHistory(SDL_Renderer *);
