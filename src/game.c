@@ -113,7 +113,9 @@ void _updateGame(ControllerState *cs)
         // Incorrect input
         prev_input.direction = cs->direction;
 
-        if (gamestate.player_pos != 0)
+        // Wrong inputs are only ignored before the first correct input of a run.
+        // Once the pattern loops back to the start, they count as misses.
+        if (gamestate.player_pos != 0 || gamestate.score > 0)
         {
             gamestate.last_input = cs->direction;
             gamestate.last_input_acc = FAIL;
