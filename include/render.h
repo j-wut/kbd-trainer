@@ -31,15 +31,15 @@
 #define INITIAL_VIEW_WIDTH (GAME_AREA_WIDTH + HISTORY_PANEL_WIDTH + SIDE_PADDING)
 
 static const char * _directionAssets[9] = {
-    [0] = "assets/n.bmp",
-    [1] = "assets/u.bmp",
-    [2] = "assets/uf.bmp",
-    [3] = "assets/f.bmp",
-    [4] = "assets/df.bmp",
-    [5] = "assets/d.bmp",
-    [6] = "assets/db.bmp",
-    [7] = "assets/b.bmp",
-    [8] = "assets/ub.bmp"
+    [0] = "assets/n.png",
+    [1] = "assets/u.png",
+    [2] = "assets/uf.png",
+    [3] = "assets/f.png",
+    [4] = "assets/df.png",
+    [5] = "assets/d.png",
+    [6] = "assets/db.png",
+    [7] = "assets/b.png",
+    [8] = "assets/ub.png"
 };
 
 static const char * _playerAsset = "assets/ez1.png";
