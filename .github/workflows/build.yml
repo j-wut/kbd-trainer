@@ -46,7 +46,21 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
+    # The exe must start on its own: no DLLs or assets folder next to it
+    - name: Check the exe runs by itself
+      shell: pwsh
+      run: |
+        $dir = New-Item -ItemType Directory -Path "$env:RUNNER_TEMP\solo"
+        Copy-Item bin\KBDTrainer.exe $dir
+        $env:SDL_VIDEO_DRIVER = "offscreen"
+        $env:SDL_AUDIO_DRIVER = "dummy"
+        $p = Start-Process "$dir\KBDTrainer.exe" -WorkingDirectory $dir -PassThru -NoNewWindow
+        # The game exits with an error if SDL or an asset fails to load
+        Start-Sleep -Seconds 5
+        if ($p.HasExited) { Write-Error "KBDTrainer exited early with code $($p.ExitCode)"; exit 1 }
+        Stop-Process -Id $p.Id
+
     - uses: actions/upload-artifact@v4
       with:
         name: KBDTrainer-windows-x64
-        path: bin
+        path: bin/KBDTrainer.exe

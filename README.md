@@ -5,9 +5,9 @@ A simple mini game for correct korean backdash inputs for Tekken
 
 ## Building
 You need CMake 3.16+ and a C compiler. If SDL3, SDL3_image and SDL3_ttf are
-installed, CMake uses them (on Windows it looks in `C:\SDL\...`). If not, CMake
-downloads and builds them for you, so the first build takes a few minutes.
-Add `-DKBD_VENDOR_SDL=ON` to always use the downloaded copy.
+installed, CMake uses them. If not, CMake downloads and builds them for you, so
+the first build takes a few minutes. Add `-DKBD_VENDOR_SDL=ON` to always use
+the downloaded copy.
 
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -15,7 +15,14 @@ cmake --build build
 ```
 
 The game and its `assets` folder end up in `bin/`. Run `bin/KBDTrainer`
-(or `bin\KBDTrainer.exe` on Windows) from any directory.
+from any directory.
+
+### Windows
+On Windows the build makes a single `bin\KBDTrainer.exe` with SDL, the C
+runtime, the images and the font all built in, so you can copy just that file
+anywhere. SDL is always downloaded and built statically. To use a prebuilt SDL
+in `C:\SDL\...` instead, add `-DKBD_VENDOR_SDL=OFF` (you then need its DLLs
+next to the exe). Add `-DKBD_EMBED_ASSETS=OFF` to load `assets\` from disk.
 
 ### Linux
 When CMake builds SDL3 itself, it needs the usual X11/Wayland/audio headers.

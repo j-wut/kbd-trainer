@@ -1,6 +1,10 @@
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 
+# Link the MSVC runtime statically so the exe doesn't need the VC++ redistributable.
+# Set before project() so the downloaded SDL libraries use it too.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 # Project name
 project(KBDTrainer VERSION 1.0 LANGUAGES C)
 
@@ -22,7 +26,17 @@ endif()
 # Use SDL3, SDL3_image and SDL3_ttf from the system when they are installed.
 # Otherwise (or with -DKBD_VENDOR_SDL=ON) download and build them statically,
 # which works on distros that don't package SDL3 yet.
-option(KBD_VENDOR_SDL "Always download and build SDL3 instead of using the system copy" OFF)
+# On Windows the static build is the default, so the game is a single exe
+# with no DLLs to copy. Pass -DKBD_VENDOR_SDL=OFF to use C:\SDL instead.
+if(WIN32)
+    set(KBD_VENDOR_SDL_DEFAULT ON)
+else()
+    set(KBD_VENDOR_SDL_DEFAULT OFF)
+endif()
+option(KBD_VENDOR_SDL "Always download and build SDL3 instead of using the system copy" ${KBD_VENDOR_SDL_DEFAULT})
+
+# On Windows, compile the assets into the exe so there is no assets folder to ship.
+option(KBD_EMBED_ASSETS "Compile the assets into the executable (Windows only)" ${WIN32})
 
 if(NOT KBD_VENDOR_SDL)
     find_package(SDL3 CONFIG QUIET)
@@ -87,10 +101,43 @@ set(SOURCE_FILES
     src/game.c
 )
 
+# Assets the game loads. Keep in sync with include/render.h.
+set(ASSET_FILES
+    assets/n.png
+    assets/u.png
+    assets/uf.png
+    assets/f.png
+    assets/df.png
+    assets/d.png
+    assets/db.png
+    assets/b.png
+    assets/ub.png
+    assets/scorefont.ttf
+)
+
+if(WIN32 AND KBD_EMBED_ASSETS)
+    enable_language(RC)
+    # One RCDATA resource per asset, named like the path in upper case with
+    # other characters as '_' ("assets/n.png" -> ASSETS_N_BMP).
+    set(KBD_ASSET_RESOURCES "")
+    foreach(asset ${ASSET_FILES})
+        string(TOUPPER "${asset}" res_name)
+        string(REGEX REPLACE "[^A-Z0-9]" "_" res_name "${res_name}")
+        string(APPEND KBD_ASSET_RESOURCES "${res_name} RCDATA \"${CMAKE_SOURCE_DIR}/${asset}\"\n")
+    endforeach()
+    configure_file(cmake/assets.rc.in "${CMAKE_BINARY_DIR}/assets.rc" @ONLY)
+    list(APPEND SOURCE_FILES "${CMAKE_BINARY_DIR}/assets.rc")
+    set_source_files_properties("${CMAKE_BINARY_DIR}/assets.rc" PROPERTIES OBJECT_DEPENDS "${ASSET_FILES}")
+endif()
+
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf SDL3::SDL3)
+
+if(WIN32 AND KBD_EMBED_ASSETS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE KBD_EMBED_ASSETS)
+endif()
 
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _AMD64_)
@@ -103,13 +150,15 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/bin"
 )
 
-# Copy assets next to the executable
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
-    COMMENT "Copying assets to output directory"
-)
+# Copy assets next to the executable unless they are embedded
+if(NOT (WIN32 AND KBD_EMBED_ASSETS))
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
+        COMMENT "Copying assets to output directory"
+    )
+endif()
 
 # On Windows with system SDL3, copy the DLLs next to the exe
 if(WIN32 AND KBD_USING_SYSTEM_SDL)

@@ -38,14 +38,48 @@ SDL_Texture *digit_textures[10];
 
 
 
-// Assets live next to the executable, so the game runs from any working directory
-static const char *_assetPath(const char *relative)
+#ifdef KBD_EMBED_ASSETS
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+// Assets are compiled into the exe as resources (see cmake/assets.rc.in).
+// The resource name is the asset path in upper case with every other
+// character replaced by '_', e.g. "assets/n.png" -> "ASSETS_N_PNG".
+static SDL_IOStream *_openAsset(const char *relative)
 {
-    static char path[1024];
+    char name[256];
+    size_t i = 0;
+    for (; relative[i] && i < sizeof(name) - 1; i++)
+    {
+        char c = relative[i];
+        if (c >= 'a' && c <= 'z')
+            c = (char)(c - 'a' + 'A');
+        else if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+            c = '_';
+        name[i] = c;
+    }
+    name[i] = '\0';
+
+    HRSRC res = FindResourceA(NULL, name, MAKEINTRESOURCEA(10) /* RT_RCDATA */);
+    HGLOBAL data = res ? LoadResource(NULL, res) : NULL;
+    const void *bytes = data ? LockResource(data) : NULL;
+    if (bytes == NULL)
+    {
+        SDL_SetError("Embedded asset %s not found", name);
+        return NULL;
+    }
+    return SDL_IOFromConstMem(bytes, SizeofResource(NULL, res));
+}
+#else
+// Assets live next to the executable, so the game runs from any working directory
+static SDL_IOStream *_openAsset(const char *relative)
+{
+    char path[1024];
     const char *base = SDL_GetBasePath();
     SDL_snprintf(path, sizeof(path), "%s%s", base ? base : "", relative);
-    return path;
+    return SDL_IOFromFile(path, "rb");
 }
+#endif
 
 // Initialize Textures
 bool InitTextures(SDL_Renderer *renderer)
@@ -54,7 +88,7 @@ bool InitTextures(SDL_Renderer *renderer)
 
     for (int i = 0; i < sizeof(_directionAssets) / sizeof(const char*); i++)
     {
-        curr = IMG_LoadTexture(renderer, _assetPath(_directionAssets[i]));    
+        curr = IMG_LoadTexture_IO(renderer, _openAsset(_directionAssets[i]), true);    
         if (curr == NULL)
         {
             printf("Error loading asset(%s): %s\n", _directionAssets[i], SDL_GetError());
@@ -68,7 +102,7 @@ bool InitTextures(SDL_Renderer *renderer)
     highscore_texture = NULL;
     score_texture = NULL;
 
-    score_font = TTF_OpenFont(_assetPath(_fontAsset), 24);
+    score_font = TTF_OpenFontIO(_openAsset(_fontAsset), true, 24);
     if (score_font == NULL)
     {
         printf("Error loading font asset(%s): %s\n", _fontAsset, SDL_GetError());
