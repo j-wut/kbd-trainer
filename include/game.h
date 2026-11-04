@@ -30,6 +30,8 @@ typedef enum {
 typedef struct {
     GameDirection direction;
     int frames;
+    // True if this input caused a MISS
+    bool missed;
 } InputHistoryEntry;
 
 typedef struct {
@@ -71,5 +73,6 @@ void _updateGame(ControllerState *);
 void _initGameModes();
 void _resetInputHistory();
 void _recordInput(GameDirection);
+void _markLastInputMissed();
 // Returns the entry `age` inputs ago (0 = newest), or NULL if there isn't one
 const InputHistoryEntry *GetInputHistoryEntry(int age);

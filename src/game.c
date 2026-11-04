@@ -117,6 +117,7 @@ void _updateGame(ControllerState *cs)
         {
             gamestate.last_input = cs->direction;
             gamestate.last_input_acc = FAIL;
+            _markLastInputMissed();
         }
     }
 }
@@ -164,6 +165,14 @@ void _recordInput(GameDirection direction)
 
     h->entries[h->head].direction = direction;
     h->entries[h->head].frames = 1;
+    h->entries[h->head].missed = false;
+}
+
+void _markLastInputMissed()
+{
+    InputHistory *h = &gamestate.input_history;
+    if (h->count > 0)
+        h->entries[h->head].missed = true;
 }
 
 const InputHistoryEntry *GetInputHistoryEntry(int age)

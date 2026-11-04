@@ -269,13 +269,21 @@ void _renderInputHistory(SDL_Renderer *renderer)
                 HISTORY_ICON_SIZE,
                 HISTORY_ICON_SIZE
             };
-            SDL_RenderTexture(renderer, direction_textures[entry->direction], NULL, &iconRect);
+            // Tint the input that caused a MISS red. The icon textures are
+            // shared with the next-input display, so reset the tint after.
+            SDL_Texture *icon = direction_textures[entry->direction];
+            if (entry->missed)
+                SDL_SetTextureColorMod(icon, 255, 51, 51);
+            SDL_RenderTexture(renderer, icon, NULL, &iconRect);
+            SDL_SetTextureColorMod(icon, 255, 255, 255);
         }
 
-        // Frame count, right aligned. Newest input is white, older ones grey.
+        // Frame count, right aligned. Newest input is white, older ones grey,
+        // and the input that caused a MISS is red.
         char frames[8];
         int len = snprintf(frames, sizeof(frames), "%d", entry->frames);
         Uint8 shade = row == 0 ? 255 : 160;
+        SDL_Color digitColor = entry->missed ? (SDL_Color){255, 51, 51, 255} : (SDL_Color){shade, shade, shade, 255};
 
         float x = panelX + HISTORY_PANEL_WIDTH;
         for (int i = len - 1; i >= 0; i--)
@@ -288,7 +296,7 @@ void _renderInputHistory(SDL_Renderer *renderer)
             x -= digitRect.w;
             digitRect.x = x;
 
-            SDL_SetTextureColorMod(digit, shade, shade, shade);
+            SDL_SetTextureColorMod(digit, digitColor.r, digitColor.g, digitColor.b);
             SDL_RenderTexture(renderer, digit, NULL, &digitRect);
         }
     }
