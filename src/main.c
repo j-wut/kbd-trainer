@@ -1,4 +1,3 @@
-#include <Xinput.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +27,7 @@ int main()
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) < 0)
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
     {
         printf("Error initializing SDL: %s\n", SDL_GetError());
         SDL_Delay(2000);

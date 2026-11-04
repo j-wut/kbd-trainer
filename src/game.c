@@ -1,12 +1,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "game.h"
 #include "input.h"
 
 ControllerState prev_input = {0};
 int selected_mode = 0;
+
+GameMode gamemodes[GAME_MODE_COUNT];
+GameState gamestate;
 
 uint64_t highscores[GAME_MODE_COUNT] = {0};
 
@@ -117,7 +121,7 @@ void _updateGame(ControllerState *cs)
 
 void _startGame()
 {
-    printf("Mode(%d) score: %d\n", selected_mode, highscores[selected_mode]);
+    printf("Mode(%d) score: %" PRIu64 "\n", selected_mode, highscores[selected_mode]);
     gamestate.player_pos = 0;
     gamestate.score = 0;
     gamestate.highscore = highscores[selected_mode];

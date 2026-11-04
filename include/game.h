@@ -13,7 +13,7 @@ typedef struct {
 } GameMode;
 
 extern int selected_mode;
-GameMode gamemodes[GAME_MODE_COUNT];
+extern GameMode gamemodes[GAME_MODE_COUNT];
 
 typedef enum {
     NONE = 0,
@@ -37,7 +37,7 @@ typedef struct{
     bool run_game;
 } GameState;
 
-GameState gamestate;
+extern GameState gamestate;
 
 void InitGame();
 void DestroyGame();
