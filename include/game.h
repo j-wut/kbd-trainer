@@ -127,6 +127,9 @@ typedef struct {
     int moves_done;
     // Last input of the previous move. Releasing part of it is not a miss.
     GameDirection release_from;
+    // Move that has to come next (the KBD after its back dash, or the dash
+    // after a block), or MOVE_TYPE_COUNT for none
+    MoveType pending;
 } MoveString;
 
 typedef struct{
