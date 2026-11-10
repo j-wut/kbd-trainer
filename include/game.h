@@ -84,8 +84,11 @@ typedef enum {
     MOVE_SIDE_WALK_DOWN,
     MOVE_FORWARD_DASH,
     MOVE_WAVE_DASH,
-    // Only used between two forward dashes, never picked on its own
+    // The moves below are never picked on their own:
+    // between two forward dashes
     MOVE_BLOCK,
+    // A back dash into the first KBD of a chain, shown as one move
+    MOVE_BACK_DASH_KBD,
     MOVE_TYPE_COUNT
 } MoveType;
 
@@ -101,7 +104,7 @@ typedef enum {
 // Frames that separate a side step tap from a side walk hold
 #define SIDE_WALK_FRAMES 15
 
-#define MAX_MOVE_STEPS 5
+#define MAX_MOVE_STEPS 7
 
 typedef struct {
     const char *name;
@@ -127,8 +130,8 @@ typedef struct {
     int moves_done;
     // Last input of the previous move. Releasing part of it is not a miss.
     GameDirection release_from;
-    // Move that has to come next (the KBD after its back dash, or the dash
-    // after a block), or MOVE_TYPE_COUNT for none
+    // Move that has to come next (the dash after a block), or
+    // MOVE_TYPE_COUNT for none
     MoveType pending;
 } MoveString;
 

@@ -285,6 +285,7 @@ const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
     [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
+    [MOVE_BACK_DASH_KBD]  = {"BACKDASH KBD",  {BACK, NEUTRAL, BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 7, HOLD_ANY},
 };
 
 #define MOVE_SCORE 100
@@ -329,8 +330,9 @@ static int _directionBits(GameDirection d)
 
 // Picks the move to follow `prev` (MOVE_TYPE_COUNT for the first move):
 // - back dash and the side steps / walks never repeat (two back dashes is a KBD)
-// - a KBD always comes after a back dash or another KBD, so a back dash is put
-//   in first, and a back dash never comes right after a KBD
+// - the first KBD of a chain comes with a back dash in front of it, as one
+//   move; later KBDs in the chain are plain KBDs
+// - a back dash never comes right after a KBD
 // - two forward dashes need a block in between, so a block is put in first
 static MoveType _nextMove(MoveType prev)
 {
@@ -342,17 +344,21 @@ static MoveType _nextMove(MoveType prev)
         return next;
     }
 
+    bool afterKbd = prev == MOVE_KBD || prev == MOVE_BACK_DASH_KBD;
+
     for (;;)
     {
         MoveType next = (MoveType)(rand() % MOVE_BLOCK);
 
-        if (next == MOVE_BACK_DASH && (prev == MOVE_BACK_DASH || prev == MOVE_KBD))
+        if (next == MOVE_BACK_DASH && (prev == MOVE_BACK_DASH || afterKbd))
             continue;
 
-        if (next == MOVE_KBD && prev != MOVE_BACK_DASH && prev != MOVE_KBD)
+        if (next == MOVE_KBD)
         {
-            m->pending = MOVE_KBD;
-            return MOVE_BACK_DASH;
+            // A back dash followed by a KBD is always the combined move
+            if (prev == MOVE_BACK_DASH)
+                continue;
+            return afterKbd ? MOVE_KBD : MOVE_BACK_DASH_KBD;
         }
 
         if (next == MOVE_FORWARD_DASH && prev == MOVE_FORWARD_DASH)
@@ -361,8 +367,8 @@ static MoveType _nextMove(MoveType prev)
             return MOVE_BLOCK;
         }
 
-        // Side steps and walks don't repeat. KBD and wave dash can.
-        if (next == prev && next != MOVE_KBD && next != MOVE_WAVE_DASH)
+        // Side steps and walks don't repeat. Wave dash can.
+        if (next == prev && next != MOVE_WAVE_DASH)
             continue;
 
         return next;
@@ -395,10 +401,10 @@ static void _completeMove()
     m->step = 0;
     m->moves_done += 1;
 
-    // The last back of a back dash or KBD counts as the first back of the
-    // KBD after it: back dash into KBD is b n b db b n b. Nothing else
-    // chains (after a wave dash, a neutral is needed before the next f).
-    if (m->queue[0] == MOVE_KBD && (done == MOVE_BACK_DASH || done == MOVE_KBD))
+    // The last back of a KBD counts as the first back of the KBD after it:
+    // KBD into KBD is b db b n b db b n b. Nothing else chains (after a wave
+    // dash, a neutral is needed before the next f).
+    if (m->queue[0] == MOVE_KBD && (done == MOVE_KBD || done == MOVE_BACK_DASH_KBD))
         m->step = 1;
 
     gamestate.score += MOVE_SCORE;

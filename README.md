@@ -16,16 +16,17 @@ finished move is worth 100 points, and the run ends on the first wrong input.
 Wrong inputs before the first move starts are ignored, and between moves you
 can go back to neutral or let go of part of the last input.
 
-Inputs are for the P1 side (P2 swaps forward and back). A KBD always
-comes right after a backdash or another KBD, and the last back of that move
-counts as the KBD's first back: backdash into KBD is b, n, b, db, b, n, b, and
-KBD into KBD is b, db, b, n, b, db, b, n, b. After a wave dash, the next move
+Inputs are for the P1 side (P2 swaps forward and back). The first KBD of a
+chain comes with its backdash as one move, BACKDASH KBD (b, n, b, db, b, n, b).
+After that, the last back of each KBD counts as the next KBD's first back: KBD
+into KBD is b, db, b, n, b, db, b, n, b. After a wave dash, the next move
 needs a neutral first: wave dash into dash is f, n, d, df, f, n, f, n, f.
 
 | Move          | Input                              |
 |---------------|------------------------------------|
 | BACKDASH      | b, n, b                            |
-| KBD           | b, db, b, n, b                     |
+| BACKDASH KBD  | b, n, b, db, b, n, b               |
+| KBD           | b, db, b, n, b (only after a KBD)  |
 | SIDESTEP UP   | tap u (let go within 15 frames)    |
 | SIDEWALK UP   | u, n, u and hold for 15 frames     |
 | SIDESTEP DOWN | tap d (let go within 15 frames)    |
