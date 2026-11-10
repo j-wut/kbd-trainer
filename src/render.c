@@ -42,6 +42,9 @@ SDL_Texture *glyph_textures[NUMBER_GLYPH_COUNT];
 static const char *_statsLabels[STATS_COLUMN_COUNT] = {"LAST", "AVG", "MIN", "MAX"};
 SDL_Texture *stats_label_textures[STATS_COLUMN_COUNT];
 
+// Names for the random movement string list
+SDL_Texture *move_name_textures[MOVE_TYPE_COUNT];
+
 
 
 #ifdef KBD_EMBED_ASSETS
@@ -156,6 +159,20 @@ bool InitTextures(SDL_Renderer *renderer)
         if (stats_label_textures[i] == NULL)
         {
             printf("Error building stats label texture: %s\n", SDL_GetError());
+            return false;
+        }
+    }
+
+    // Build the move names for the random movement string mode
+    for (int i = 0; i < MOVE_TYPE_COUNT; i++)
+    {
+        surface = TTF_RenderText_Solid(score_font, move_info[i].name, strlen(move_info[i].name), textColor);
+        move_name_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_DestroySurface(surface);
+
+        if (move_name_textures[i] == NULL)
+        {
+            printf("Error building move name texture: %s\n", SDL_GetError());
             return false;
         }
     }
@@ -437,8 +454,170 @@ void _renderStepStats(SDL_Renderer *renderer)
     }
 }
 
+// Draws one move of the movement string: its name, and its inputs under it.
+// For the current move, inputs already done are dimmed.
+static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool current, int stepsDone, bool missed)
+{
+    const MoveInfo *info = &move_info[move];
+
+    SDL_Color nameColor = current ? (SDL_Color){255, 255, 255, 255} : (SDL_Color){150, 150, 150, 255};
+    if (missed)
+        nameColor = (SDL_Color){255, 51, 51, 255};
+
+    SDL_Texture *name = move_name_textures[move];
+    float w, h;
+    SDL_GetTextureSize(name, &w, &h);
+    SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 4, w * MOVES_NAME_HEIGHT / h, MOVES_NAME_HEIGHT};
+    SDL_SetTextureColorMod(name, nameColor.r, nameColor.g, nameColor.b);
+    SDL_RenderTexture(renderer, name, NULL, &nameRect);
+
+    float iconX = MOVES_LIST_X + 8;
+    float iconY = y + MOVES_NAME_HEIGHT + 4;
+    for (int i = 0; i < info->step_count; i++)
+    {
+        SDL_Texture *icon = direction_textures[GetMoveStep(move, i)];
+        SDL_FRect iconRect = {iconX, iconY, MOVES_ICON_SIZE, MOVES_ICON_SIZE};
+
+        Uint8 shade = 255;
+        if (!current)
+            shade = 150;
+        else if (i < stepsDone)
+            shade = 90;
+        SDL_SetTextureColorMod(icon, shade, shade, shade);
+        SDL_RenderTexture(renderer, icon, NULL, &iconRect);
+        SDL_SetTextureColorMod(icon, 255, 255, 255);
+
+        iconX += MOVES_ICON_SIZE + 4;
+    }
+
+    // Side step / walk: a bar showing how long the input is held. Full means
+    // it's a side walk, so a side step has to let go before it fills.
+    if (info->hold == HOLD_ANY)
+        return;
+
+    const float barX = iconX + 4;
+    const float barW = MOVES_LIST_WIDTH - (barX - MOVES_LIST_X) - 8;
+    const float barH = 6;
+    const float barY = iconY + (MOVES_ICON_SIZE - barH) / 2;
+
+    SDL_SetRenderDrawColor(renderer, 70, 70, 70, 255);
+    SDL_FRect track = {barX, barY, barW, barH};
+    SDL_RenderRect(renderer, &track);
+
+    if (current && stepsDone == info->step_count)
+    {
+        float fill = (float)gamestate.held_frames / SIDE_WALK_FRAMES;
+        if (fill > 1)
+            fill = 1;
+        if (info->hold == HOLD_LONG)
+            SDL_SetRenderDrawColor(renderer, 51, 200, 51, 255);
+        else
+            SDL_SetRenderDrawColor(renderer, 230, 200, 51, 255);
+        SDL_FRect bar = {barX, barY, barW * fill, barH};
+        SDL_RenderFillRect(renderer, &bar);
+    }
+    else if (info->hold == HOLD_LONG)
+    {
+        // Show the walk bar as a target to fill
+        SDL_SetRenderDrawColor(renderer, 40, 90, 40, 255);
+        SDL_FRect bar = {barX + 1, barY + 1, barW - 2, barH - 2};
+        SDL_RenderFillRect(renderer, &bar);
+    }
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+}
+
+// Draws the next MOVES_SHOWN moves, current one on top. When a move is
+// finished the list scrolls up one row.
+void _renderMoves(SDL_Renderer *renderer)
+{
+    static int seenMovesDone = 0;
+    static float scroll = 0;
+
+    const MoveString *m = &gamestate.moves;
+    if (m->moves_done != seenMovesDone)
+    {
+        scroll = m->moves_done > seenMovesDone ? MOVES_ROW_HEIGHT : 0;
+        seenMovesDone = m->moves_done;
+    }
+
+    // Box around the current move
+    SDL_FRect currentRect = {MOVES_LIST_X, MOVES_LIST_Y, MOVES_LIST_WIDTH, MOVES_ROW_HEIGHT - 2};
+    SDL_SetRenderDrawColor(renderer, 35, 35, 35, 255);
+    SDL_RenderFillRect(renderer, &currentRect);
+    if (gamestate.last_input_acc == FAIL)
+        SDL_SetRenderDrawColor(renderer, 255, 51, 51, 255);
+    else
+        SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
+    SDL_RenderRect(renderer, &currentRect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    SDL_Rect clip = {MOVES_LIST_X, MOVES_LIST_Y, MOVES_LIST_WIDTH, MOVES_ROW_HEIGHT * MOVES_SHOWN};
+    SDL_SetRenderClipRect(renderer, &clip);
+
+    // The move just finished scrolls out the top
+    if (scroll > 0)
+        _renderMoveRow(renderer, m->last_move, MOVES_LIST_Y + scroll - MOVES_ROW_HEIGHT, false, 0, false);
+
+    for (int i = 0; i < MOVES_SHOWN; i++)
+    {
+        bool current = i == 0;
+        _renderMoveRow(renderer, m->queue[i], MOVES_LIST_Y + i * MOVES_ROW_HEIGHT + scroll,
+            current, current ? m->step : 0, current && gamestate.last_input_acc == FAIL);
+    }
+
+    SDL_SetRenderClipRect(renderer, NULL);
+
+    scroll -= (float)MOVES_ROW_HEIGHT / MOVES_SCROLL_FRAMES;
+    if (scroll < 0)
+        scroll = 0;
+}
+
+static void _renderMovesGame(SDL_Renderer *renderer)
+{
+    _renderMoves(renderer);
+
+    // Score and high score, to the right of the list
+    _updateScore(renderer);
+    SDL_FRect scoreRect = {MOVES_SCORE_X, VERT_PADDING, MOVES_SCORE_WIDTH, MOVES_SCORE_HEIGHT};
+    SDL_RenderTexture(renderer, score_texture, NULL, &scoreRect);
+    SDL_FRect highRect = {MOVES_SCORE_X, VERT_PADDING + MOVES_SCORE_HEIGHT + 4, MOVES_SCORE_WIDTH, MOVES_SCORE_HEIGHT};
+    SDL_SetTextureColorMod(highscore_texture, 150, 150, 150);
+    SDL_RenderTexture(renderer, highscore_texture, NULL, &highRect);
+    SDL_SetTextureColorMod(highscore_texture, 255, 255, 255);
+
+    _renderInputHistory(renderer);
+
+    if (gamestate.last_input_acc == FAIL)
+    {
+        float y = VERT_PADDING + MOVES_SCORE_HEIGHT * 2 + 20;
+        SDL_FRect iconRect = {MOVES_SCORE_X, y + 3, 24, 24};
+        if (gamestate.last_input >= NEUTRAL && gamestate.last_input <= UP_BACK)
+            SDL_RenderTexture(renderer, direction_textures[gamestate.last_input], NULL, &iconRect);
+        SDL_FRect accRect = {MOVES_SCORE_X + 28, y, MOVES_SCORE_WIDTH - 28, ACC_DISPLAY_HEIGHT};
+        SDL_RenderTexture(renderer, acc_textures[FAIL], NULL, &accRect);
+
+        SDL_RenderPresent(renderer);
+
+        // Same pause as the other modes. Multiple delay calls to prevent
+        // Windows from "not responding"
+        SDL_DelayPrecise(500000000);
+        SDL_DelayPrecise(500000000);
+        SDL_DelayPrecise(200000000);
+        return;
+    }
+
+    SDL_RenderPresent(renderer);
+}
+
 void _renderGame(SDL_Renderer *renderer) 
 {
+    if (gamestate.current_mode->random_moves)
+    {
+        SDL_RenderClear(renderer);
+        _renderMovesGame(renderer);
+        return;
+    }
+
     SDL_RenderClear(renderer);
     
     // Render inputs

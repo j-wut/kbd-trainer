@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include "game.h"
 #include "input.h"
@@ -92,6 +93,8 @@ void _updateGame(ControllerState *cs)
         gamestate.player_pos = 0;
         gamestate.score = 0;
         gamestate.last_input_acc = NONE;
+        if (gamestate.current_mode->random_moves)
+            _resetMoves();
         prev_input = *cs;
         return;
     }
@@ -100,6 +103,12 @@ void _updateGame(ControllerState *cs)
     {
         highscores[selected_mode] = gamestate.highscore;
         gamestate.run_game = false;
+        return;
+    }
+
+    if (gamestate.current_mode->random_moves)
+    {
+        _updateMoves(cs);
         return;
     }
     
@@ -159,6 +168,8 @@ void _startGame()
     _resetStepStats();
     gamestate.held_direction = UNKNOWN;
     gamestate.held_frames = 0;
+    if (gamestate.current_mode->random_moves)
+        _resetMoves();
     gamestate.run_game = true;
 }
 
@@ -262,6 +273,199 @@ StepSummary GetStepSummary(int step)
     return summary;
 }
 
+// ************* RANDOM MOVEMENT STRING ******************//
+
+const MoveInfo move_info[MOVE_TYPE_COUNT] = {
+    [MOVE_BACK_DASH]      = {"BACKDASH",      {BACK, NEUTRAL, BACK}, 3, HOLD_ANY},
+    [MOVE_KBD]            = {"KBD",           {BACK, NEUTRAL, BACK, DOWN_BACK}, 4, HOLD_ANY},
+    [MOVE_SIDE_STEP_UP]   = {"SIDESTEP UP",   {UP}, 1, HOLD_TAP},
+    [MOVE_SIDE_WALK_UP]   = {"SIDEWALK UP",   {UP}, 1, HOLD_LONG},
+    [MOVE_SIDE_STEP_DOWN] = {"SIDESTEP DOWN", {DOWN}, 1, HOLD_TAP},
+    [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN}, 1, HOLD_LONG},
+    [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
+    [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD}, 4, HOLD_ANY},
+    [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
+};
+
+#define MOVE_SCORE 100
+
+static GameDirection _mirror(GameDirection d)
+{
+    switch (d)
+    {
+        case FORWARD:      return BACK;
+        case BACK:         return FORWARD;
+        case UP_FORWARD:   return UP_BACK;
+        case UP_BACK:      return UP_FORWARD;
+        case DOWN_FORWARD: return DOWN_BACK;
+        case DOWN_BACK:    return DOWN_FORWARD;
+        default:           return d;
+    }
+}
+
+GameDirection GetMoveStep(MoveType move, int step)
+{
+    GameDirection d = move_info[move].steps[step];
+    return gamestate.current_mode->mirrored ? _mirror(d) : d;
+}
+
+// Bits for up / down / back / forward, to tell when one direction is
+// part of another (releasing one key of a diagonal)
+static int _directionBits(GameDirection d)
+{
+    switch (d)
+    {
+        case UP:           return 1;
+        case DOWN:         return 2;
+        case BACK:         return 4;
+        case FORWARD:      return 8;
+        case UP_BACK:      return 1 | 4;
+        case UP_FORWARD:   return 1 | 8;
+        case DOWN_BACK:    return 2 | 4;
+        case DOWN_FORWARD: return 2 | 8;
+        default:           return 0;
+    }
+}
+
+// Picks the move to follow `prev`:
+// - back dash and the side steps / walks never repeat (two back dashes is a KBD)
+// - two forward dashes need a block in between, so a block is put in first
+static MoveType _nextMove(MoveType prev)
+{
+    if (prev == MOVE_BLOCK)
+        return MOVE_FORWARD_DASH;
+
+    for (;;)
+    {
+        MoveType next = (MoveType)(rand() % MOVE_BLOCK);
+        if (next != prev)
+            return next;
+
+        switch (next)
+        {
+            case MOVE_KBD:
+            case MOVE_WAVE_DASH:
+                return next;
+            case MOVE_FORWARD_DASH:
+                return MOVE_BLOCK;
+            default:
+                // No repeat, pick again
+                break;
+        }
+    }
+}
+
+void _resetMoves()
+{
+    MoveString *m = &gamestate.moves;
+    m->queue[0] = (MoveType)(rand() % MOVE_BLOCK);
+    for (int i = 1; i < MOVES_SHOWN; i++)
+        m->queue[i] = _nextMove(m->queue[i - 1]);
+    m->last_move = m->queue[0];
+    m->step = 0;
+    m->moves_done = 0;
+    m->release_from = NEUTRAL;
+}
+
+static void _completeMove()
+{
+    MoveString *m = &gamestate.moves;
+    MoveType done = m->queue[0];
+
+    m->release_from = GetMoveStep(done, move_info[done].step_count - 1);
+    m->last_move = done;
+    for (int i = 0; i < MOVES_SHOWN - 1; i++)
+        m->queue[i] = m->queue[i + 1];
+    m->queue[MOVES_SHOWN - 1] = _nextMove(m->queue[MOVES_SHOWN - 2]);
+    m->step = 0;
+    m->moves_done += 1;
+
+    gamestate.score += MOVE_SCORE;
+    if (gamestate.score > gamestate.highscore)
+        gamestate.highscore = gamestate.score;
+    gamestate.last_input_acc = SUCCESS;
+}
+
+static void _missMove(GameDirection direction)
+{
+    gamestate.last_input = direction;
+    gamestate.last_input_acc = FAIL;
+    _markLastInputMissed();
+}
+
+// A new direction was pressed (or released to)
+static void _moveDirectionChanged(GameDirection direction)
+{
+    MoveString *m = &gamestate.moves;
+    const MoveInfo *move = &move_info[m->queue[0]];
+
+    if (direction == GetMoveStep(m->queue[0], m->step))
+    {
+        m->step += 1;
+        gamestate.last_input = direction;
+        // Side steps and walks finish once the hold is known
+        if (m->step == move->step_count && move->hold == HOLD_ANY)
+            _completeMove();
+        return;
+    }
+
+    if (m->step == 0)
+    {
+        // Between moves, going back to neutral or letting go of part of the
+        // last input is fine
+        if (direction == NEUTRAL || direction == UNKNOWN)
+            return;
+        int bits = _directionBits(direction);
+        if ((bits & _directionBits(m->release_from)) == bits)
+            return;
+
+        // Wrong inputs before the first move of a run are ignored
+        if (m->moves_done == 0)
+            return;
+    }
+
+    _missMove(direction);
+}
+
+void _updateMoves(ControllerState *cs)
+{
+    MoveString *m = &gamestate.moves;
+    const MoveInfo *move = &move_info[m->queue[0]];
+    bool changed = cs->direction != prev_input.direction;
+    prev_input.direction = cs->direction;
+
+    // Last input of a side step / walk is down: check how long it's held
+    if (m->step == move->step_count && move->hold != HOLD_ANY)
+    {
+        GameDirection held = GetMoveStep(m->queue[0], m->step - 1);
+        bool long_enough = cs->direction == held && gamestate.held_frames >= SIDE_WALK_FRAMES;
+
+        if (move->hold == HOLD_LONG)
+        {
+            if (long_enough)
+                _completeMove();
+            else if (changed)
+                _missMove(cs->direction);
+            return;
+        }
+
+        // HOLD_TAP
+        if (long_enough)
+        {
+            _missMove(cs->direction);
+            return;
+        }
+        if (!changed)
+            return;
+
+        // Released in time. The new direction may start the next move.
+        _completeMove();
+    }
+
+    if (changed)
+        _moveDirectionChanged(cs->direction);
+}
+
 void DestroyGame()
 {
     for(int i = 0; i < GAME_MODE_COUNT; i++)
@@ -329,6 +533,16 @@ void _initGameModes()
     gamemodes[3].mode_name = "P2 WD";
     gamemodes[3].pattern_size = 6;
     gamemodes[3].pattern = pattern;
+
+    // P1 / P2 random movement strings
+    gamemodes[4].mode_name = "P1 MOVES";
+    gamemodes[4].random_moves = true;
+
+    gamemodes[5].mode_name = "P2 MOVES";
+    gamemodes[5].random_moves = true;
+    gamemodes[5].mirrored = true;
+
+    srand((unsigned int)time(NULL));
 
     printf("Gamemodes Initialized.\n");
 }

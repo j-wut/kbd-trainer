@@ -9,6 +9,33 @@ downback. LAST is the most recent rep, and AVG, MIN and MAX cover the last 10
 reps. The stats reset when you pick a mode from the menu.
 
 
+## Movement string mode
+P1 MOVES and P2 MOVES show a random string of movement options, five at a
+time. Input each move in order; the list scrolls up as you finish one. Every
+finished move is worth 100 points, and the run ends on the first wrong input.
+Wrong inputs before the first move starts are ignored, and between moves you
+can go back to neutral or let go of part of the last input.
+
+Inputs are for the P1 side (P2 swaps forward and back):
+
+| Move          | Input                              |
+|---------------|------------------------------------|
+| BACKDASH      | b, n, b                            |
+| KBD           | b, n, b, db                        |
+| SIDESTEP UP   | tap u (let go within 15 frames)    |
+| SIDEWALK UP   | hold u for 15 frames               |
+| SIDESTEP DOWN | tap d (let go within 15 frames)    |
+| SIDEWALK DOWN | hold d for 15 frames               |
+| DASH          | f, n, f                            |
+| WAVEDASH      | f, n, d, df                        |
+| BLOCK         | b (only shows up between two dashes) |
+
+A backdash and the side steps and walks never come up twice in a row (two
+backdashes in a row is a KBD). KBD and wave dash can repeat. Two dashes in a
+row always have a BLOCK between them. The bar next to a side step or walk
+fills while you hold the input; a side step has to let go before it fills.
+
+
 ## Building
 You need CMake 3.16+ and a C compiler. If SDL3, SDL3_image and SDL3_ttf are
 installed, CMake uses them. If not, CMake downloads and builds them for you, so
