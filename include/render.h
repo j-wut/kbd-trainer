@@ -30,6 +30,20 @@
 
 #define INITIAL_VIEW_WIDTH (GAME_AREA_WIDTH + HISTORY_PANEL_WIDTH + SIDE_PADDING)
 
+// Timing stats panel, below the play area and history
+#define STATS_ROW_HEIGHT 20
+#define STATS_ICON_SIZE 18
+#define STATS_TEXT_HEIGHT 16
+// Most stat rows a mode shows
+#define STATS_ROWS 3
+#define STATS_PANEL_HEIGHT (STATS_ROW_HEIGHT * (STATS_ROWS + 1) + VERT_PADDING)
+// Right edge of the first value column and the width of each column
+#define STATS_FIRST_COLUMN_RIGHT (SIDE_PADDING + 115)
+#define STATS_COLUMN_WIDTH 90
+#define STATS_COLUMN_COUNT 4
+
+#define WINDOW_HEIGHT (INITIAL_VIEW_HEIGHT + STATS_PANEL_HEIGHT)
+
 static const char * _directionAssets[9] = {
     [0] = "assets/n.png",
     [1] = "assets/u.png",
@@ -57,3 +71,4 @@ void _playFailAnimation(SDL_Renderer *);
 
 void _updateScore(SDL_Renderer *rendrerer);
 void _renderInputHistory(SDL_Renderer *);
+void _renderStepStats(SDL_Renderer *);
