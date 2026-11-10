@@ -101,7 +101,7 @@ typedef enum {
 // Frames that separate a side step tap from a side walk hold
 #define SIDE_WALK_FRAMES 15
 
-#define MAX_MOVE_STEPS 4
+#define MAX_MOVE_STEPS 5
 
 typedef struct {
     const char *name;

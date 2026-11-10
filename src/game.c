@@ -277,13 +277,13 @@ StepSummary GetStepSummary(int step)
 
 const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_BACK_DASH]      = {"BACKDASH",      {BACK, NEUTRAL, BACK}, 3, HOLD_ANY},
-    [MOVE_KBD]            = {"KBD",           {BACK, NEUTRAL, BACK, DOWN_BACK}, 4, HOLD_ANY},
+    [MOVE_KBD]            = {"KBD",           {BACK, NEUTRAL, BACK, DOWN_BACK, BACK}, 5, HOLD_ANY},
     [MOVE_SIDE_STEP_UP]   = {"SIDESTEP UP",   {UP}, 1, HOLD_TAP},
     [MOVE_SIDE_WALK_UP]   = {"SIDEWALK UP",   {UP, NEUTRAL, UP}, 3, HOLD_LONG},
     [MOVE_SIDE_STEP_DOWN] = {"SIDESTEP DOWN", {DOWN}, 1, HOLD_TAP},
     [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN, NEUTRAL, DOWN}, 3, HOLD_LONG},
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
-    [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD}, 4, HOLD_ANY},
+    [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
 };
 
@@ -379,6 +379,14 @@ static void _completeMove()
     m->queue[MOVES_SHOWN - 1] = _nextMove(m->queue[MOVES_SHOWN - 2]);
     m->step = 0;
     m->moves_done += 1;
+
+    // A move that starts on the input the last one ended on picks up from
+    // there, so moves chain: KBD into KBD is b n b db b n b db b, and a
+    // wave dash flows into the next one or into a dash the same way.
+    const MoveInfo *next = &move_info[m->queue[0]];
+    if (next->hold == HOLD_ANY && next->step_count > 1
+        && GetMoveStep(m->queue[0], 0) == m->release_from)
+        m->step = 1;
 
     gamestate.score += MOVE_SCORE;
     if (gamestate.score > gamestate.highscore)

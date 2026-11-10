@@ -16,18 +16,21 @@ finished move is worth 100 points, and the run ends on the first wrong input.
 Wrong inputs before the first move starts are ignored, and between moves you
 can go back to neutral or let go of part of the last input.
 
-Inputs are for the P1 side (P2 swaps forward and back):
+Inputs are for the P1 side (P2 swaps forward and back). When a move starts on
+the input the previous one ended on, that input is shared, so moves chain:
+KBD into KBD is b, n, b, db, b, n, b, db, b, and a wave dash into a dash is
+f, n, d, df, f, n, f.
 
 | Move          | Input                              |
 |---------------|------------------------------------|
 | BACKDASH      | b, n, b                            |
-| KBD           | b, n, b, db                        |
+| KBD           | b, n, b, db, b                     |
 | SIDESTEP UP   | tap u (let go within 15 frames)    |
 | SIDEWALK UP   | u, n, u and hold for 15 frames     |
 | SIDESTEP DOWN | tap d (let go within 15 frames)    |
 | SIDEWALK DOWN | d, n, d and hold for 15 frames     |
 | DASH          | f, n, f                            |
-| WAVEDASH      | f, n, d, df                        |
+| WAVEDASH      | f, n, d, df, f                     |
 | BLOCK         | b (only shows up between two dashes) |
 
 A backdash and the side steps and walks never come up twice in a row (two
