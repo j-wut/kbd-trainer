@@ -10,6 +10,10 @@ typedef struct {
 
     GameDirection *pattern;
     int pattern_size;
+
+    // Pattern steps to show timing stats for, in display order
+    const int *stat_steps;
+    int stat_step_count;
 } GameMode;
 
 extern int selected_mode;
@@ -41,6 +45,28 @@ typedef struct {
     int count;
 } InputHistory;
 
+// Longest pattern any mode uses
+#define MAX_PATTERN_SIZE 8
+// How many recent reps the timing stats are taken over
+#define STEP_STATS_WINDOW 10
+
+// Frames held on one pattern step over the most recent reps
+typedef struct {
+    // Ring buffer, newest sample is at `head`
+    int samples[STEP_STATS_WINDOW];
+    int head;
+    int count;
+} StepStats;
+
+// Summary of a StepStats window, for display
+typedef struct {
+    int count;
+    int last;
+    int min;
+    int max;
+    float avg;
+} StepSummary;
+
 typedef struct{
     // current position in the pattern
     int player_pos;
@@ -54,6 +80,13 @@ typedef struct{
     GameDirection last_input;
 
     InputHistory input_history;
+
+    // Direction currently held and for how many frames
+    GameDirection held_direction;
+    int held_frames;
+
+    // Frames held on each pattern step, indexed by step
+    StepStats step_stats[MAX_PATTERN_SIZE];
     
     GameMode *current_mode;
     bool run_game;
@@ -76,3 +109,8 @@ void _recordInput(GameDirection);
 void _markLastInputMissed();
 // Returns the entry `age` inputs ago (0 = newest), or NULL if there isn't one
 const InputHistoryEntry *GetInputHistoryEntry(int age);
+
+void _resetStepStats();
+void _recordStepFrames(int step, int frames);
+// Summarizes the recent frames held on a pattern step. count is 0 if there are none yet.
+StepSummary GetStepSummary(int step);

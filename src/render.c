@@ -13,7 +13,7 @@
 
 
 int ViewWidth = INITIAL_VIEW_WIDTH; 
-int ViewHeight = INITIAL_VIEW_HEIGHT; 
+int ViewHeight = WINDOW_HEIGHT; 
 
 SDL_Texture *direction_textures[9];
 
@@ -32,9 +32,15 @@ SDL_Texture *acc_textures[3];
 // Menu stuff
 SDL_Texture *menu_textures[GAME_MODE_COUNT];
 
-// Input history stuff: one texture per digit so frame counts can be drawn
-// every frame without making new textures
-SDL_Texture *digit_textures[10];
+// Input history and stats stuff: one texture per glyph so numbers can be
+// drawn every frame without making new textures
+static const char _numberGlyphs[] = "0123456789.-";
+#define NUMBER_GLYPH_COUNT (sizeof(_numberGlyphs) - 1)
+SDL_Texture *glyph_textures[NUMBER_GLYPH_COUNT];
+
+// Column headers for the timing stats panel
+static const char *_statsLabels[STATS_COLUMN_COUNT] = {"LAST", "AVG", "MIN", "MAX"};
+SDL_Texture *stats_label_textures[STATS_COLUMN_COUNT];
 
 
 
@@ -125,18 +131,31 @@ bool InitTextures(SDL_Renderer *renderer)
     acc_textures[FAIL] = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_DestroySurface(surface);
 
-    // Build digit textures for the input history frame counts
-    SDL_Color digitColor = {255, 255, 255};
-    for (int i = 0; i < 10; i++)
+    // Build glyph textures for the input history and stats numbers
+    SDL_Color textColor = {255, 255, 255};
+    for (int i = 0; i < NUMBER_GLYPH_COUNT; i++)
     {
-        char digit = '0' + i;
-        surface = TTF_RenderText_Solid(score_font, &digit, 1, digitColor);
-        digit_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        surface = TTF_RenderText_Solid(score_font, &_numberGlyphs[i], 1, textColor);
+        glyph_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_DestroySurface(surface);
 
-        if (digit_textures[i] == NULL)
+        if (glyph_textures[i] == NULL)
         {
-            printf("Error building digit texture: %s\n", SDL_GetError());
+            printf("Error building glyph texture: %s\n", SDL_GetError());
+            return false;
+        }
+    }
+
+    // Build the stats column headers
+    for (int i = 0; i < STATS_COLUMN_COUNT; i++)
+    {
+        surface = TTF_RenderText_Solid(score_font, _statsLabels[i], strlen(_statsLabels[i]), textColor);
+        stats_label_textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_DestroySurface(surface);
+
+        if (stats_label_textures[i] == NULL)
+        {
+            printf("Error building stats label texture: %s\n", SDL_GetError());
             return false;
         }
     }
@@ -226,7 +245,7 @@ void _renderMenu(SDL_Renderer *renderer)
     SDL_RenderClear(renderer);
     
     // Keep the mode name the same size as before, centered in the wider window
-    SDL_FRect destRect = {(INITIAL_VIEW_WIDTH - GAME_AREA_WIDTH) / 2 + SIDE_PADDING, INITIAL_VIEW_HEIGHT / 2 - ICON_HEIGHT / 2, GAME_AREA_WIDTH - (SIDE_PADDING * 2), ICON_HEIGHT};
+    SDL_FRect destRect = {(INITIAL_VIEW_WIDTH - GAME_AREA_WIDTH) / 2 + SIDE_PADDING, WINDOW_HEIGHT / 2 - ICON_HEIGHT / 2, GAME_AREA_WIDTH - (SIDE_PADDING * 2), ICON_HEIGHT};
     SDL_RenderTexture(renderer, menu_textures[selected_mode], NULL, &destRect);
     
     SDL_RenderPresent(renderer);
@@ -276,6 +295,39 @@ SDL_FRect failed_acc_rect = {
 };
 
 
+// Draws a number (digits, '.' and '-') with its right edge at rightX
+static void _drawNumber(SDL_Renderer *renderer, const char *text, float rightX, float y, float height, SDL_Color color)
+{
+    float x = rightX;
+    for (int i = (int)strlen(text) - 1; i >= 0; i--)
+    {
+        const char *glyph = strchr(_numberGlyphs, text[i]);
+        if (glyph == NULL || *glyph == '\0')
+            continue;
+
+        SDL_Texture *texture = glyph_textures[glyph - _numberGlyphs];
+        float w, h;
+        SDL_GetTextureSize(texture, &w, &h);
+
+        SDL_FRect rect = {0, y, w * height / h, height};
+        x -= rect.w;
+        rect.x = x;
+
+        SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
+        SDL_RenderTexture(renderer, texture, NULL, &rect);
+    }
+}
+
+// Draws a texture scaled to `height` with its right edge at rightX
+static void _drawRightAligned(SDL_Renderer *renderer, SDL_Texture *texture, float rightX, float y, float height, SDL_Color color)
+{
+    float w, h;
+    SDL_GetTextureSize(texture, &w, &h);
+    SDL_FRect rect = {rightX - w * height / h, y, w * height / h, height};
+    SDL_SetTextureColorMod(texture, color.r, color.g, color.b);
+    SDL_RenderTexture(renderer, texture, NULL, &rect);
+}
+
 // Draws the most recent inputs, newest on top, each with how many frames it was held
 void _renderInputHistory(SDL_Renderer *renderer)
 {
@@ -315,23 +367,72 @@ void _renderInputHistory(SDL_Renderer *renderer)
         // Frame count, right aligned. Newest input is white, older ones grey,
         // and the input that caused a MISS is red.
         char frames[8];
-        int len = snprintf(frames, sizeof(frames), "%d", entry->frames);
+        snprintf(frames, sizeof(frames), "%d", entry->frames);
         Uint8 shade = row == 0 ? 255 : 160;
         SDL_Color digitColor = entry->missed ? (SDL_Color){255, 51, 51, 255} : (SDL_Color){shade, shade, shade, 255};
 
-        float x = panelX + HISTORY_PANEL_WIDTH;
-        for (int i = len - 1; i >= 0; i--)
+        _drawNumber(renderer, frames, panelX + HISTORY_PANEL_WIDTH, rowY + (HISTORY_ROW_HEIGHT - HISTORY_DIGIT_HEIGHT) / 2, HISTORY_DIGIT_HEIGHT, digitColor);
+    }
+}
+
+// Draws how many frames each tracked pattern step was held over the recent reps:
+// the last rep, and the average, min and max over the last STEP_STATS_WINDOW reps
+void _renderStepStats(SDL_Renderer *renderer)
+{
+    const GameMode *mode = gamestate.current_mode;
+    if (mode->stat_step_count == 0)
+        return;
+
+    const float panelY = INITIAL_VIEW_HEIGHT;
+    const float textOffset = (STATS_ROW_HEIGHT - STATS_TEXT_HEIGHT) / 2;
+    const SDL_Color labelColor = {160, 160, 160, 255};
+    const SDL_Color valueColor = {255, 255, 255, 255};
+
+    // Divider between the play area and the stats
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
+    SDL_RenderLine(renderer, SIDE_PADDING, panelY, INITIAL_VIEW_WIDTH - SIDE_PADDING, panelY);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    // Column headers
+    for (int col = 0; col < STATS_COLUMN_COUNT; col++)
+    {
+        float right = STATS_FIRST_COLUMN_RIGHT + col * STATS_COLUMN_WIDTH;
+        _drawRightAligned(renderer, stats_label_textures[col], right, panelY + textOffset, STATS_TEXT_HEIGHT, labelColor);
+    }
+
+    for (int row = 0; row < mode->stat_step_count && row < STATS_ROWS; row++)
+    {
+        int step = mode->stat_steps[row];
+        float rowY = panelY + (row + 1) * STATS_ROW_HEIGHT;
+
+        // Icon for the step's direction
+        SDL_FRect iconRect = {
+            SIDE_PADDING,
+            rowY + (STATS_ROW_HEIGHT - STATS_ICON_SIZE) / 2,
+            STATS_ICON_SIZE,
+            STATS_ICON_SIZE
+        };
+        SDL_RenderTexture(renderer, direction_textures[mode->pattern[step]], NULL, &iconRect);
+
+        StepSummary summary = GetStepSummary(step);
+        char values[STATS_COLUMN_COUNT][16];
+        if (summary.count == 0)
         {
-            SDL_Texture *digit = digit_textures[frames[i] - '0'];
-            float w, h;
-            SDL_GetTextureSize(digit, &w, &h);
+            for (int col = 0; col < STATS_COLUMN_COUNT; col++)
+                snprintf(values[col], sizeof(values[col]), "-");
+        }
+        else
+        {
+            snprintf(values[0], sizeof(values[0]), "%d", summary.last);
+            snprintf(values[1], sizeof(values[1]), "%.1f", summary.avg);
+            snprintf(values[2], sizeof(values[2]), "%d", summary.min);
+            snprintf(values[3], sizeof(values[3]), "%d", summary.max);
+        }
 
-            SDL_FRect digitRect = {0, rowY + (HISTORY_ROW_HEIGHT - HISTORY_DIGIT_HEIGHT) / 2, w * HISTORY_DIGIT_HEIGHT / h, HISTORY_DIGIT_HEIGHT};
-            x -= digitRect.w;
-            digitRect.x = x;
-
-            SDL_SetTextureColorMod(digit, digitColor.r, digitColor.g, digitColor.b);
-            SDL_RenderTexture(renderer, digit, NULL, &digitRect);
+        for (int col = 0; col < STATS_COLUMN_COUNT; col++)
+        {
+            float right = STATS_FIRST_COLUMN_RIGHT + col * STATS_COLUMN_WIDTH;
+            _drawNumber(renderer, values[col], right, rowY + textOffset, STATS_TEXT_HEIGHT, valueColor);
         }
     }
 }
@@ -351,6 +452,9 @@ void _renderGame(SDL_Renderer *renderer)
 
     // Input history panel
     _renderInputHistory(renderer);
+
+    // Timing stats panel
+    _renderStepStats(renderer);
     
     // Success fail panel
     if (gamestate.last_input_acc == FAIL)

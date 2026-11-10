@@ -2,6 +2,12 @@ KBD Trainer
 =========================================
 A simple mini game for correct korean backdash inputs for Tekken
 
+## Timing stats
+In the KBD modes, the panel under the score shows how many frames you held
+neutral, back (the second back, before downback cancels the backdash) and
+downback. LAST is the most recent rep, and AVG, MIN and MAX cover the last 10
+reps. The stats reset when you pick a mode from the menu.
+
 
 ## Building
 You need CMake 3.16+ and a C compiler. If SDL3, SDL3_image and SDL3_ttf are

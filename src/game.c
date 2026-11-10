@@ -71,6 +71,21 @@ void _updateGame(ControllerState *cs)
     gamestate.curr_input = cs->direction;
     _recordInput(cs->direction);
 
+    // Count how long the current direction has been held. When it changes,
+    // ended_frames is how long the previous direction was held.
+    int ended_frames = 0;
+    if (cs->direction == gamestate.held_direction)
+    {
+        if (gamestate.held_frames < INPUT_HISTORY_MAX_FRAMES)
+            gamestate.held_frames += 1;
+    }
+    else
+    {
+        ended_frames = gamestate.held_frames;
+        gamestate.held_direction = cs->direction;
+        gamestate.held_frames = 1;
+    }
+
     if (gamestate.last_input_acc == FAIL)
     {
         // Reset after failure
@@ -93,7 +108,14 @@ void _updateGame(ControllerState *cs)
     
     if (cs->direction == gamestate.current_mode->pattern[ gamestate.player_pos % gamestate.current_mode->pattern_size ])
     {
-        // Correct input
+        // Correct input. If the previous step was also hit correctly in this
+        // run, the direction that just ended was that step, so record its timing.
+        if (gamestate.player_pos != 0 || gamestate.score > 0)
+        {
+            int size = gamestate.current_mode->pattern_size;
+            _recordStepFrames((gamestate.player_pos + size - 1) % size, ended_frames);
+        }
+
         gamestate.score += 50;
         if (gamestate.score > gamestate.highscore)
             gamestate.highscore = gamestate.score;
@@ -134,6 +156,9 @@ void _startGame()
     gamestate.last_input = NEUTRAL;
     gamestate.last_input_acc = NONE;
     _resetInputHistory();
+    _resetStepStats();
+    gamestate.held_direction = UNKNOWN;
+    gamestate.held_frames = 0;
     gamestate.run_game = true;
 }
 
@@ -186,6 +211,57 @@ const InputHistoryEntry *GetInputHistoryEntry(int age)
     return &h->entries[(h->head - age + INPUT_HISTORY_SIZE) % INPUT_HISTORY_SIZE];
 }
 
+// ************* STEP TIMING STATS ******************//
+
+void _resetStepStats()
+{
+    for (int i = 0; i < MAX_PATTERN_SIZE; i++)
+    {
+        StepStats empty = {0};
+        gamestate.step_stats[i] = empty;
+    }
+}
+
+void _recordStepFrames(int step, int frames)
+{
+    if (step < 0 || step >= MAX_PATTERN_SIZE || frames <= 0)
+        return;
+
+    StepStats *s = &gamestate.step_stats[step];
+    if (s->count > 0)
+        s->head = (s->head + 1) % STEP_STATS_WINDOW;
+    if (s->count < STEP_STATS_WINDOW)
+        s->count += 1;
+    s->samples[s->head] = frames;
+}
+
+StepSummary GetStepSummary(int step)
+{
+    StepSummary summary = {0};
+    if (step < 0 || step >= MAX_PATTERN_SIZE)
+        return summary;
+
+    const StepStats *s = &gamestate.step_stats[step];
+    if (s->count == 0)
+        return summary;
+
+    int total = 0;
+    summary.count = s->count;
+    summary.last = s->samples[s->head];
+    summary.min = summary.last;
+    summary.max = summary.last;
+    for (int i = 0; i < s->count; i++)
+    {
+        int frames = s->samples[(s->head - i + STEP_STATS_WINDOW) % STEP_STATS_WINDOW];
+        total += frames;
+        if (frames < summary.min) summary.min = frames;
+        if (frames > summary.max) summary.max = frames;
+    }
+    summary.avg = (float)total / s->count;
+
+    return summary;
+}
+
 void DestroyGame()
 {
     for(int i = 0; i < GAME_MODE_COUNT; i++)
@@ -193,6 +269,9 @@ void DestroyGame()
         free(gamemodes[i].pattern);
     }
 }
+
+// KBD steps with timing stats: neutral, back (before the downback cancel), downback
+static const int _kbdStatSteps[] = {1, 2, 3};
 
 void _initGameModes()
 {
@@ -208,6 +287,8 @@ void _initGameModes()
     gamemodes[0].mode_name = "P1 KBD";
     gamemodes[0].pattern_size = 4;
     gamemodes[0].pattern = pattern;
+    gamemodes[0].stat_steps = _kbdStatSteps;
+    gamemodes[0].stat_step_count = 3;
     
     // P2 KBD
     pattern = malloc(4 * sizeof(GameMode));
@@ -219,6 +300,8 @@ void _initGameModes()
     gamemodes[1].mode_name = "P2 KBD";
     gamemodes[1].pattern_size = 4;
     gamemodes[1].pattern = pattern;
+    gamemodes[1].stat_steps = _kbdStatSteps;
+    gamemodes[1].stat_step_count = 3;
 
     // P1 WD
     pattern = malloc(6 * sizeof(GameMode));
