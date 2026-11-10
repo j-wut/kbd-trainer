@@ -23,9 +23,9 @@ Inputs are for the P1 side (P2 swaps forward and back):
 | BACKDASH      | b, n, b                            |
 | KBD           | b, n, b, db                        |
 | SIDESTEP UP   | tap u (let go within 15 frames)    |
-| SIDEWALK UP   | hold u for 15 frames               |
+| SIDEWALK UP   | u, n, u and hold for 15 frames     |
 | SIDESTEP DOWN | tap d (let go within 15 frames)    |
-| SIDEWALK DOWN | hold d for 15 frames               |
+| SIDEWALK DOWN | d, n, d and hold for 15 frames     |
 | DASH          | f, n, f                            |
 | WAVEDASH      | f, n, d, df                        |
 | BLOCK         | b (only shows up between two dashes) |

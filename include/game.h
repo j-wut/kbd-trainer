@@ -94,7 +94,7 @@ typedef enum {
     HOLD_ANY = 0,
     // Released before SIDE_WALK_FRAMES (side step)
     HOLD_TAP,
-    // Held for SIDE_WALK_FRAMES (side walk)
+    // Held for SIDE_WALK_FRAMES (side walk, after the double tap)
     HOLD_LONG
 } MoveHold;
 
