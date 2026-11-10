@@ -207,3 +207,6 @@ GameDirection GetMoveStep(MoveType move, int step);
 // The move for rep `rep` of a row (the first KBD of a chain has its back
 // dash in front, later ones don't)
 MoveType GetRowMove(const MoveRow *row, int rep);
+// The move whose name to show. Side steps and walks are named by the side
+// they go to (L/R): up is left on the P1 side and right on the P2 side.
+MoveType GetNameMove(MoveType move);

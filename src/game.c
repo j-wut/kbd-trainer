@@ -278,10 +278,10 @@ StepSummary GetStepSummary(int step)
 const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_BACK_DASH]      = {"BACKDASH",      {BACK, NEUTRAL, BACK}, 3, HOLD_ANY},
     [MOVE_KBD]            = {"KBD",           {BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 5, HOLD_ANY},
-    [MOVE_SIDE_STEP_UP]   = {"SIDESTEP UP",   {UP}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_UP]   = {"SIDEWALK UP",   {UP, NEUTRAL, UP}, 3, HOLD_ANY},
-    [MOVE_SIDE_STEP_DOWN] = {"SIDESTEP DOWN", {DOWN}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN, NEUTRAL, DOWN}, 3, HOLD_ANY},
+    [MOVE_SIDE_STEP_UP]   = {"SSL",           {UP}, 1, HOLD_TAP},
+    [MOVE_SIDE_WALK_UP]   = {"SWL",           {UP, NEUTRAL, UP}, 3, HOLD_ANY},
+    [MOVE_SIDE_STEP_DOWN] = {"SSR",           {DOWN}, 1, HOLD_TAP},
+    [MOVE_SIDE_WALK_DOWN] = {"SWR",           {DOWN, NEUTRAL, DOWN}, 3, HOLD_ANY},
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
     [MOVE_WAVE_DASH]      = {"WVD",           {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
@@ -326,6 +326,20 @@ static int _directionBits(GameDirection d)
         case DOWN_BACK:    return 2 | 4;
         case DOWN_FORWARD: return 2 | 8;
         default:           return 0;
+    }
+}
+
+MoveType GetNameMove(MoveType move)
+{
+    if (!gamestate.current_mode->mirrored)
+        return move;
+    switch (move)
+    {
+        case MOVE_SIDE_STEP_UP:   return MOVE_SIDE_STEP_DOWN;
+        case MOVE_SIDE_STEP_DOWN: return MOVE_SIDE_STEP_UP;
+        case MOVE_SIDE_WALK_UP:   return MOVE_SIDE_WALK_DOWN;
+        case MOVE_SIDE_WALK_DOWN: return MOVE_SIDE_WALK_UP;
+        default:                  return move;
     }
 }
 

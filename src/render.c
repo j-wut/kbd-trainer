@@ -478,7 +478,7 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
 {
     MoveType move = GetRowMove(row, rep);
     const MoveInfo *info = &move_info[move];
-    MoveType nameMove = row->type;
+    MoveType nameMove = GetNameMove(row->type);
 
     SDL_Color nameColor = current ? (SDL_Color){255, 255, 255, 255} : (SDL_Color){150, 150, 150, 255};
     if (missed)
