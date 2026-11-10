@@ -44,6 +44,7 @@ f, n, f.
 
 A backdash and the side steps and walks never come up twice in a row (two
 backdashes in a row is a KBD), and a backdash never comes right after a KBD.
+A side step and side walk in the same direction never follow each other.
 KBD and wave dash can repeat. Two dashes in a row always have a BLOCK between
 them. The bar next to a side step fills while you hold the input; let go
 before it fills.

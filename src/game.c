@@ -349,8 +349,18 @@ static int _rollReps()
     return reps;
 }
 
+// True for a side step and side walk in the same direction (either order)
+static bool _sameSide(MoveType a, MoveType b)
+{
+    return (a == MOVE_SIDE_STEP_UP && b == MOVE_SIDE_WALK_UP)
+        || (a == MOVE_SIDE_WALK_UP && b == MOVE_SIDE_STEP_UP)
+        || (a == MOVE_SIDE_STEP_DOWN && b == MOVE_SIDE_WALK_DOWN)
+        || (a == MOVE_SIDE_WALK_DOWN && b == MOVE_SIDE_STEP_DOWN);
+}
+
 // Picks the row to follow `prev` (MOVE_TYPE_COUNT for the first row):
-// - back dash and the side steps / walks never repeat (two back dashes is a KBD)
+// - back dash and the side steps / walks never repeat (two back dashes is a KBD),
+//   and a side step and side walk in the same direction never follow each other
 // - a KBD chain always starts with its back dash, as one BACKDASH KBD row
 //   with the number of KBDs; a back dash never comes right after a KBD
 // - a dash into a wave dash is always one DASH WVD row
@@ -406,7 +416,7 @@ static MoveRow _nextRow(MoveType prev)
         }
 
         // Side steps and walks don't repeat
-        if (next == prev && next != MOVE_DASH_WAVE_DASH)
+        if ((next == prev && next != MOVE_DASH_WAVE_DASH) || _sameSide(prev, next))
             continue;
 
         row.type = next;
