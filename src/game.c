@@ -286,6 +286,7 @@ const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
     [MOVE_BACK_DASH_KBD]  = {"BACKDASH KBD",  {BACK, NEUTRAL, BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 7, HOLD_ANY},
+    [MOVE_DASH_WAVE_DASH] = {"DASH WAVEDASH", {FORWARD, NEUTRAL, FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 7, HOLD_ANY},
 };
 
 #define MOVE_SCORE 100
@@ -333,6 +334,7 @@ static int _directionBits(GameDirection d)
 // - the first KBD of a chain comes with a back dash in front of it, as one
 //   move; later KBDs in the chain are plain KBDs
 // - a back dash never comes right after a KBD
+// - a dash into a wave dash is always shown as one move (DASH WAVEDASH)
 // - two forward dashes need a block in between, so a block is put in first
 static MoveType _nextMove(MoveType prev)
 {
@@ -361,14 +363,25 @@ static MoveType _nextMove(MoveType prev)
             return afterKbd ? MOVE_KBD : MOVE_BACK_DASH_KBD;
         }
 
-        if (next == MOVE_FORWARD_DASH && prev == MOVE_FORWARD_DASH)
+        if (next == MOVE_WAVE_DASH)
         {
-            m->pending = MOVE_FORWARD_DASH;
+            // A dash followed by a wave dash is always the combined move
+            if (prev == MOVE_FORWARD_DASH)
+                continue;
+            // Half of the wave dashes come with a dash in front
+            if (rand() % 2)
+                next = MOVE_DASH_WAVE_DASH;
+        }
+
+        // Two moves in a row that start with a dash need a block between
+        if ((next == MOVE_FORWARD_DASH || next == MOVE_DASH_WAVE_DASH) && prev == MOVE_FORWARD_DASH)
+        {
+            m->pending = next;
             return MOVE_BLOCK;
         }
 
         // Side steps and walks don't repeat. Wave dash can.
-        if (next == prev && next != MOVE_WAVE_DASH)
+        if (next == prev && next != MOVE_WAVE_DASH && next != MOVE_DASH_WAVE_DASH)
             continue;
 
         return next;

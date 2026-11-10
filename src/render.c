@@ -468,6 +468,14 @@ static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool 
     float w, h;
     SDL_GetTextureSize(name, &w, &h);
     SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 3, w * MOVES_NAME_HEIGHT / h, MOVES_NAME_HEIGHT};
+    // Shrink names that don't fit the row, keeping them on the same baseline
+    const float maxNameW = MOVES_LIST_WIDTH - 12;
+    if (nameRect.w > maxNameW)
+    {
+        nameRect.h = MOVES_NAME_HEIGHT * maxNameW / nameRect.w;
+        nameRect.y += MOVES_NAME_HEIGHT - nameRect.h;
+        nameRect.w = maxNameW;
+    }
     SDL_SetTextureColorMod(name, nameColor.r, nameColor.g, nameColor.b);
     SDL_RenderTexture(renderer, name, NULL, &nameRect);
 

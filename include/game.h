@@ -89,6 +89,8 @@ typedef enum {
     MOVE_BLOCK,
     // A back dash into the first KBD of a chain, shown as one move
     MOVE_BACK_DASH_KBD,
+    // A dash into a wave dash, shown as one move
+    MOVE_DASH_WAVE_DASH,
     MOVE_TYPE_COUNT
 } MoveType;
 

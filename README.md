@@ -19,7 +19,8 @@ can go back to neutral or let go of part of the last input.
 Inputs are for the P1 side (P2 swaps forward and back). The first KBD of a
 chain comes with its backdash as one move, BACKDASH KBD (b, n, b, db, b, n, b).
 After that, the last back of each KBD counts as the next KBD's first back: KBD
-into KBD is b, db, b, n, b, db, b, n, b. After a wave dash, the next move
+into KBD is b, db, b, n, b, db, b, n, b. A dash into a wave dash is also one move,
+DASH WAVEDASH, where the dash's second f is the wave dash's first f. After a wave dash, the next move
 needs a neutral first: wave dash into dash is f, n, d, df, f, n, f, n, f.
 
 | Move          | Input                              |
@@ -33,6 +34,7 @@ needs a neutral first: wave dash into dash is f, n, d, df, f, n, f, n, f.
 | SIDEWALK DOWN | d, n, d and hold for 15 frames     |
 | DASH          | f, n, f                            |
 | WAVEDASH      | f, n, d, df, f                     |
+| DASH WAVEDASH | f, n, f, n, d, df, f               |
 | BLOCK         | b (only shows up between two dashes) |
 
 A backdash and the side steps and walks never come up twice in a row (two
