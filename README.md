@@ -19,9 +19,10 @@ can go back to neutral or let go of part of the last input.
 Inputs are for the P1 side (P2 swaps forward and back). The first KBD of a
 chain comes with its backdash as one move, BACKDASH KBD (b, n, b, db, b, n, b).
 After that, the last back of each KBD counts as the next KBD's first back: KBD
-into KBD is b, db, b, n, b, db, b, n, b. A dash into a wave dash is also one move,
-DASH WAVEDASH, where the dash's second f is the wave dash's first f. After a wave dash, the next move
-needs a neutral first: wave dash into dash is f, n, d, df, f, n, f, n, f.
+into KBD is b, db, b, n, b, db, b, n, b. A dash into a wave dash is also one
+move, DASH WAVEDASH, where the dash's second f is the wave dash's first f.
+After a wave dash, the next move needs a neutral first: wave dash into dash is
+f, n, d, df, f, n, f, n, f.
 
 | Move          | Input                              |
 |---------------|------------------------------------|
