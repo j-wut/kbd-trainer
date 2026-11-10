@@ -19,7 +19,8 @@ can go back to neutral or let go of part of the last input.
 Inputs are for the P1 side (P2 swaps forward and back). When a move starts on
 the input the previous one ended on, that input is shared, so moves chain:
 KBD into KBD is b, n, b, db, b, n, b, db, b, and a wave dash into a dash is
-f, n, d, df, f, n, f.
+f, n, d, df, f, n, f. Wave dash into wave dash is the exception: it needs a
+neutral before the next f (f, n, d, df, f, n, f, n, d, df, f).
 
 | Move          | Input                              |
 |---------------|------------------------------------|

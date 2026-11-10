@@ -382,9 +382,11 @@ static void _completeMove()
 
     // A move that starts on the input the last one ended on picks up from
     // there, so moves chain: KBD into KBD is b n b db b n b db b, and a
-    // wave dash flows into the next one or into a dash the same way.
+    // wave dash into a dash is f n d df f n f. Wave dash into wave dash
+    // doesn't chain: it needs a neutral before the next f.
     const MoveInfo *next = &move_info[m->queue[0]];
-    if (next->hold == HOLD_ANY && next->step_count > 1
+    bool waveIntoWave = done == MOVE_WAVE_DASH && m->queue[0] == MOVE_WAVE_DASH;
+    if (next->hold == HOLD_ANY && next->step_count > 1 && !waveIntoWave
         && GetMoveStep(m->queue[0], 0) == m->release_from)
         m->step = 1;
 
