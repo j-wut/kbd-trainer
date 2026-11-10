@@ -16,11 +16,10 @@ finished move is worth 100 points, and the run ends on the first wrong input.
 Wrong inputs before the first move starts are ignored, and between moves you
 can go back to neutral or let go of part of the last input.
 
-Inputs are for the P1 side (P2 swaps forward and back). When a move starts on
-the input the previous one ended on, that input is shared, so moves chain:
-KBD into KBD is b, n, b, db, b, n, b, db, b, and a wave dash into a dash is
-f, n, d, df, f, n, f. Wave dash into wave dash is the exception: it needs a
-neutral before the next f (f, n, d, df, f, n, f, n, d, df, f).
+Inputs are for the P1 side (P2 swaps forward and back). The last back of a
+KBD counts as the first back of a KBD or backdash right after it, so KBD into
+KBD is b, n, b, db, b, n, b, db, b. After a wave dash, the next move needs a
+neutral first: wave dash into dash is f, n, d, df, f, n, f, n, f.
 
 | Move          | Input                              |
 |---------------|------------------------------------|

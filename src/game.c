@@ -380,14 +380,11 @@ static void _completeMove()
     m->step = 0;
     m->moves_done += 1;
 
-    // A move that starts on the input the last one ended on picks up from
-    // there, so moves chain: KBD into KBD is b n b db b n b db b, and a
-    // wave dash into a dash is f n d df f n f. Wave dash into wave dash
-    // doesn't chain: it needs a neutral before the next f.
-    const MoveInfo *next = &move_info[m->queue[0]];
-    bool waveIntoWave = done == MOVE_WAVE_DASH && m->queue[0] == MOVE_WAVE_DASH;
-    if (next->hold == HOLD_ANY && next->step_count > 1 && !waveIntoWave
-        && GetMoveStep(m->queue[0], 0) == m->release_from)
+    // The last back of a KBD counts as the first back of a following KBD or
+    // backdash: KBD into KBD is b n b db b n b db b. Nothing else chains
+    // (after a wave dash, a neutral is needed before the next f).
+    if (done == MOVE_KBD && GetMoveStep(m->queue[0], 0) == m->release_from
+        && move_info[m->queue[0]].step_count > 1)
         m->step = 1;
 
     gamestate.score += MOVE_SCORE;
