@@ -49,8 +49,8 @@
 #define MOVES_LIST_X SIDE_PADDING
 #define MOVES_LIST_Y VERT_PADDING
 #define MOVES_LIST_WIDTH 200
-#define MOVES_NAME_HEIGHT 16
-#define MOVES_ICON_SIZE 22
+#define MOVES_NAME_HEIGHT 21
+#define MOVES_ICON_SIZE 15
 // Frames the list takes to scroll up one row
 #define MOVES_SCROLL_FRAMES 6
 // Score panel to the right of the list

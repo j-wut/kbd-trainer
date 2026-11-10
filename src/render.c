@@ -467,12 +467,12 @@ static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool 
     SDL_Texture *name = move_name_textures[move];
     float w, h;
     SDL_GetTextureSize(name, &w, &h);
-    SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 4, w * MOVES_NAME_HEIGHT / h, MOVES_NAME_HEIGHT};
+    SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 3, w * MOVES_NAME_HEIGHT / h, MOVES_NAME_HEIGHT};
     SDL_SetTextureColorMod(name, nameColor.r, nameColor.g, nameColor.b);
     SDL_RenderTexture(renderer, name, NULL, &nameRect);
 
     float iconX = MOVES_LIST_X + 8;
-    float iconY = y + MOVES_NAME_HEIGHT + 4;
+    float iconY = y + MOVES_NAME_HEIGHT + 6;
     for (int i = 0; i < info->step_count; i++)
     {
         SDL_Texture *icon = direction_textures[GetMoveStep(move, i)];
@@ -487,7 +487,7 @@ static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool 
         SDL_RenderTexture(renderer, icon, NULL, &iconRect);
         SDL_SetTextureColorMod(icon, 255, 255, 255);
 
-        iconX += MOVES_ICON_SIZE + 4;
+        iconX += MOVES_ICON_SIZE + 3;
     }
 
     // Side step / walk: a bar showing how long the input is held. Full means
@@ -497,7 +497,7 @@ static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool 
 
     const float barX = iconX + 4;
     const float barW = MOVES_LIST_WIDTH - (barX - MOVES_LIST_X) - 8;
-    const float barH = 6;
+    const float barH = 5;
     const float barY = iconY + (MOVES_ICON_SIZE - barH) / 2;
 
     SDL_SetRenderDrawColor(renderer, 70, 70, 70, 255);
