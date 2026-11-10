@@ -121,15 +121,29 @@ extern const MoveInfo move_info[MOVE_TYPE_COUNT];
 // How many upcoming moves are shown
 #define MOVES_SHOWN 5
 
+// One row of the move list: a move done `reps` times in a row. Only KBD
+// chains (BACKDASH KBD, then KBDs) and wave dashes repeat.
 typedef struct {
-    // queue[0] is the move being input, the rest are coming up
-    MoveType queue[MOVES_SHOWN];
-    // The move that was just finished, for the scroll animation
-    MoveType last_move;
-    // Inputs of queue[0] done so far
+    MoveType type;
+    int reps;
+} MoveRow;
+
+// Most reps one row asks for
+#define MAX_ROW_REPS 4
+
+typedef struct {
+    // queue[0] is the row being input, the rest are coming up
+    MoveRow queue[MOVES_SHOWN];
+    // The row that was just finished, for the scroll animation
+    MoveRow last_row;
+    // Reps of queue[0] done so far
+    int rep;
+    // Inputs of the current rep done so far
     int step;
-    // Moves finished this run
+    // Moves (reps) finished this run
     int moves_done;
+    // Rows finished this run
+    int rows_done;
     // Last input of the previous move. Releasing part of it is not a miss.
     GameDirection release_from;
     // Move that has to come next (the dash after a block), or
@@ -192,3 +206,6 @@ void _resetMoves();
 void _updateMoves(ControllerState *);
 // Input `step` of a move, with forward and back swapped on the P2 side
 GameDirection GetMoveStep(MoveType move, int step);
+// The move for rep `rep` of a row (the first KBD of a chain has its back
+// dash in front, later ones don't)
+MoveType GetRowMove(const MoveRow *row, int rep);

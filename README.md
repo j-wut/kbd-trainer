@@ -16,26 +16,30 @@ finished move is worth 100 points, and the run ends on the first wrong input.
 Wrong inputs before the first move starts are ignored, and between moves you
 can go back to neutral or let go of part of the last input.
 
-Inputs are for the P1 side (P2 swaps forward and back). The first KBD of a
-chain comes with its backdash as one move, BACKDASH KBD (b, n, b, db, b, n, b).
-After that, the last back of each KBD counts as the next KBD's first back: KBD
-into KBD is b, db, b, n, b, db, b, n, b. A dash into a wave dash is also one
-move, DASH WAVEDASH, where the dash's second f is the wave dash's first f.
-After a wave dash, the next move needs a neutral first: wave dash into dash is
-f, n, d, df, f, n, f, n, f.
+Inputs are for the P1 side (P2 swaps forward and back). A KBD chain always
+starts with its backdash, shown as one BACKDASH KBD row (b, n, b, db, b, n, b),
+and a dash into a wave dash is one DASH WVD row (the dash's second f is the
+wave dash's first f).
+
+KBDs and wave dashes in a row share one row with a count, e.g. WVD (x3),
+DASH WVD (x2) or BACKDASH KBD (x2). The count goes down as you finish each one.
+Each KBD after the first is b, db, b, n, b, where the first b is the last b of
+the KBD before, so BACKDASH KBD (x2) is b, n, b, db, b, n, b, db, b, n, b. Each
+wave dash after the first needs a neutral before its f. After a wave dash, the
+next row needs a neutral first too: wave dash into dash is f, n, d, df, f, n,
+f, n, f.
 
 | Move          | Input                              |
 |---------------|------------------------------------|
 | BACKDASH      | b, n, b                            |
 | BACKDASH KBD  | b, n, b, db, b, n, b               |
-| KBD           | b, db, b, n, b (only after a KBD)  |
 | SIDESTEP UP   | tap u (let go within 15 frames)    |
 | SIDEWALK UP   | u, n, u and hold for 15 frames     |
 | SIDESTEP DOWN | tap d (let go within 15 frames)    |
 | SIDEWALK DOWN | d, n, d and hold for 15 frames     |
 | DASH          | f, n, f                            |
-| WAVEDASH      | f, n, d, df, f                     |
-| DASH WAVEDASH | f, n, f, n, d, df, f               |
+| WVD           | f, n, d, df, f                     |
+| DASH WVD      | f, n, f, n, d, df, f               |
 | BLOCK         | b (only shows up between two dashes) |
 
 A backdash and the side steps and walks never come up twice in a row (two

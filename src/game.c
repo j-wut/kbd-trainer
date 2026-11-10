@@ -283,10 +283,10 @@ const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_SIDE_STEP_DOWN] = {"SIDESTEP DOWN", {DOWN}, 1, HOLD_TAP},
     [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN, NEUTRAL, DOWN}, 3, HOLD_LONG},
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
-    [MOVE_WAVE_DASH]      = {"WAVEDASH",      {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
+    [MOVE_WAVE_DASH]      = {"WVD",           {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
     [MOVE_BACK_DASH_KBD]  = {"BACKDASH KBD",  {BACK, NEUTRAL, BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 7, HOLD_ANY},
-    [MOVE_DASH_WAVE_DASH] = {"DASH WAVEDASH", {FORWARD, NEUTRAL, FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 7, HOLD_ANY},
+    [MOVE_DASH_WAVE_DASH] = {"DASH WVD",      {FORWARD, NEUTRAL, FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 7, HOLD_ANY},
 };
 
 #define MOVE_SCORE 100
@@ -329,38 +329,60 @@ static int _directionBits(GameDirection d)
     }
 }
 
-// Picks the move to follow `prev` (MOVE_TYPE_COUNT for the first move):
+MoveType GetRowMove(const MoveRow *row, int rep)
+{
+    if (rep == 0)
+        return row->type;
+    if (row->type == MOVE_BACK_DASH_KBD)
+        return MOVE_KBD;
+    if (row->type == MOVE_DASH_WAVE_DASH)
+        return MOVE_WAVE_DASH;
+    return row->type;
+}
+
+// How many times a row repeats: 1, and then another rep a third of the time
+static int _rollReps()
+{
+    int reps = 1;
+    while (reps < MAX_ROW_REPS && rand() % 3 == 0)
+        reps += 1;
+    return reps;
+}
+
+// Picks the row to follow `prev` (MOVE_TYPE_COUNT for the first row):
 // - back dash and the side steps / walks never repeat (two back dashes is a KBD)
-// - the first KBD of a chain comes with a back dash in front of it, as one
-//   move; later KBDs in the chain are plain KBDs
-// - a back dash never comes right after a KBD
-// - a dash into a wave dash is always shown as one move (DASH WAVEDASH)
-// - two forward dashes need a block in between, so a block is put in first
-static MoveType _nextMove(MoveType prev)
+// - a KBD chain always starts with its back dash, as one BACKDASH KBD row
+//   with the number of KBDs; a back dash never comes right after a KBD
+// - a dash into a wave dash is always one DASH WVD row
+// - wave dashes in a row are one row with the count, so a WVD row never
+//   follows a WVD or DASH WVD row
+// - two moves in a row that start with a dash need a block in between
+static MoveRow _nextRow(MoveType prev)
 {
     MoveString *m = &gamestate.moves;
+    MoveRow row = {MOVE_TYPE_COUNT, 1};
     if (m->pending != MOVE_TYPE_COUNT)
     {
-        MoveType next = m->pending;
+        row.type = m->pending;
         m->pending = MOVE_TYPE_COUNT;
-        return next;
+        if (row.type == MOVE_DASH_WAVE_DASH)
+            row.reps = _rollReps();
+        return row;
     }
-
-    bool afterKbd = prev == MOVE_KBD || prev == MOVE_BACK_DASH_KBD;
 
     for (;;)
     {
         MoveType next = (MoveType)(rand() % MOVE_BLOCK);
 
-        if (next == MOVE_BACK_DASH && (prev == MOVE_BACK_DASH || afterKbd))
+        if (next == MOVE_BACK_DASH && (prev == MOVE_BACK_DASH || prev == MOVE_BACK_DASH_KBD))
             continue;
 
         if (next == MOVE_KBD)
         {
-            // A back dash followed by a KBD is always the combined move
-            if (prev == MOVE_BACK_DASH)
+            // A KBD right after a back dash or KBD would be part of that row
+            if (prev == MOVE_BACK_DASH || prev == MOVE_BACK_DASH_KBD)
                 continue;
-            return afterKbd ? MOVE_KBD : MOVE_BACK_DASH_KBD;
+            next = MOVE_BACK_DASH_KBD;
         }
 
         if (next == MOVE_WAVE_DASH)
@@ -371,20 +393,26 @@ static MoveType _nextMove(MoveType prev)
             // Half of the wave dashes come with a dash in front
             if (rand() % 2)
                 next = MOVE_DASH_WAVE_DASH;
+            // More wave dashes go in the row before
+            else if (prev == MOVE_WAVE_DASH || prev == MOVE_DASH_WAVE_DASH)
+                continue;
         }
 
-        // Two moves in a row that start with a dash need a block between
         if ((next == MOVE_FORWARD_DASH || next == MOVE_DASH_WAVE_DASH) && prev == MOVE_FORWARD_DASH)
         {
             m->pending = next;
-            return MOVE_BLOCK;
+            row.type = MOVE_BLOCK;
+            return row;
         }
 
-        // Side steps and walks don't repeat. Wave dash can.
-        if (next == prev && next != MOVE_WAVE_DASH && next != MOVE_DASH_WAVE_DASH)
+        // Side steps and walks don't repeat
+        if (next == prev && next != MOVE_DASH_WAVE_DASH)
             continue;
 
-        return next;
+        row.type = next;
+        if (next == MOVE_BACK_DASH_KBD || next == MOVE_WAVE_DASH || next == MOVE_DASH_WAVE_DASH)
+            row.reps = _rollReps();
+        return row;
     }
 }
 
@@ -392,38 +420,55 @@ void _resetMoves()
 {
     MoveString *m = &gamestate.moves;
     m->pending = MOVE_TYPE_COUNT;
-    m->queue[0] = _nextMove(MOVE_TYPE_COUNT);
+    m->queue[0] = _nextRow(MOVE_TYPE_COUNT);
     for (int i = 1; i < MOVES_SHOWN; i++)
-        m->queue[i] = _nextMove(m->queue[i - 1]);
-    m->last_move = m->queue[0];
+        m->queue[i] = _nextRow(m->queue[i - 1].type);
+    m->last_row = m->queue[0];
+    m->rep = 0;
     m->step = 0;
     m->moves_done = 0;
+    m->rows_done = 0;
     m->release_from = NEUTRAL;
+}
+
+static MoveType _currentMove()
+{
+    const MoveString *m = &gamestate.moves;
+    return GetRowMove(&m->queue[0], m->rep);
 }
 
 static void _completeMove()
 {
     MoveString *m = &gamestate.moves;
-    MoveType done = m->queue[0];
+    MoveType done = _currentMove();
 
     m->release_from = GetMoveStep(done, move_info[done].step_count - 1);
-    m->last_move = done;
-    for (int i = 0; i < MOVES_SHOWN - 1; i++)
-        m->queue[i] = m->queue[i + 1];
-    m->queue[MOVES_SHOWN - 1] = _nextMove(m->queue[MOVES_SHOWN - 2]);
     m->step = 0;
     m->moves_done += 1;
-
-    // The last back of a KBD counts as the first back of the KBD after it:
-    // KBD into KBD is b db b n b db b n b. Nothing else chains (after a wave
-    // dash, a neutral is needed before the next f).
-    if (m->queue[0] == MOVE_KBD && (done == MOVE_KBD || done == MOVE_BACK_DASH_KBD))
-        m->step = 1;
+    m->rep += 1;
 
     gamestate.score += MOVE_SCORE;
     if (gamestate.score > gamestate.highscore)
         gamestate.highscore = gamestate.score;
     gamestate.last_input_acc = SUCCESS;
+
+    if (m->rep < m->queue[0].reps)
+    {
+        // The last back of a KBD counts as the first back of the next KBD:
+        // KBD into KBD is b db b n b db b n b. Wave dashes don't chain, the
+        // next one needs a neutral before its f.
+        if (_currentMove() == MOVE_KBD)
+            m->step = 1;
+        return;
+    }
+
+    // Row finished: scroll to the next one
+    m->last_row = m->queue[0];
+    for (int i = 0; i < MOVES_SHOWN - 1; i++)
+        m->queue[i] = m->queue[i + 1];
+    m->queue[MOVES_SHOWN - 1] = _nextRow(m->queue[MOVES_SHOWN - 2].type);
+    m->rep = 0;
+    m->rows_done += 1;
 }
 
 static void _missMove(GameDirection direction)
@@ -437,9 +482,9 @@ static void _missMove(GameDirection direction)
 static void _moveDirectionChanged(GameDirection direction)
 {
     MoveString *m = &gamestate.moves;
-    const MoveInfo *move = &move_info[m->queue[0]];
+    const MoveInfo *move = &move_info[_currentMove()];
 
-    if (direction == GetMoveStep(m->queue[0], m->step))
+    if (direction == GetMoveStep(_currentMove(), m->step))
     {
         m->step += 1;
         gamestate.last_input = direction;
@@ -470,14 +515,14 @@ static void _moveDirectionChanged(GameDirection direction)
 void _updateMoves(ControllerState *cs)
 {
     MoveString *m = &gamestate.moves;
-    const MoveInfo *move = &move_info[m->queue[0]];
+    const MoveInfo *move = &move_info[_currentMove()];
     bool changed = cs->direction != prev_input.direction;
     prev_input.direction = cs->direction;
 
     // Last input of a side step / walk is down: check how long it's held
     if (m->step == move->step_count && move->hold != HOLD_ANY)
     {
-        GameDirection held = GetMoveStep(m->queue[0], m->step - 1);
+        GameDirection held = GetMoveStep(_currentMove(), m->step - 1);
         bool long_enough = cs->direction == held && gamestate.held_frames >= SIDE_WALK_FRAMES;
 
         if (move->hold == HOLD_LONG)

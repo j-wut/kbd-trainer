@@ -34,7 +34,7 @@ SDL_Texture *menu_textures[GAME_MODE_COUNT];
 
 // Input history and stats stuff: one texture per glyph so numbers can be
 // drawn every frame without making new textures
-static const char _numberGlyphs[] = "0123456789.-";
+static const char _numberGlyphs[] = "0123456789.-x()";
 #define NUMBER_GLYPH_COUNT (sizeof(_numberGlyphs) - 1)
 SDL_Texture *glyph_textures[NUMBER_GLYPH_COUNT];
 
@@ -454,30 +454,60 @@ void _renderStepStats(SDL_Renderer *renderer)
     }
 }
 
-// Draws one move of the movement string: its name, and its inputs under it.
-// For the current move, inputs already done are dimmed.
-static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool current, int stepsDone, bool missed)
+// Width of a number drawn with _drawNumber at `height`
+static float _numberWidth(const char *text, float height)
 {
+    float total = 0;
+    for (int i = 0; text[i]; i++)
+    {
+        const char *glyph = strchr(_numberGlyphs, text[i]);
+        if (glyph == NULL || *glyph == '\0')
+            continue;
+        float w, h;
+        SDL_GetTextureSize(glyph_textures[glyph - _numberGlyphs], &w, &h);
+        total += w * height / h;
+    }
+    return total;
+}
+
+// Draws one row of the movement string: its name (with "(xN)" when it
+// repeats), and the inputs of one rep under it. For the current row, N
+// counts the reps left, the inputs are for the rep being done (a KBD after
+// the first one has no back dash) and inputs already done are dimmed.
+static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, float y, bool current, int stepsDone, bool missed)
+{
+    MoveType move = GetRowMove(row, rep);
     const MoveInfo *info = &move_info[move];
+    MoveType nameMove = row->type;
 
     SDL_Color nameColor = current ? (SDL_Color){255, 255, 255, 255} : (SDL_Color){150, 150, 150, 255};
     if (missed)
         nameColor = (SDL_Color){255, 51, 51, 255};
 
-    SDL_Texture *name = move_name_textures[move];
+    SDL_Texture *name = move_name_textures[nameMove];
     float w, h;
     SDL_GetTextureSize(name, &w, &h);
-    SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 3, w * MOVES_NAME_HEIGHT / h, MOVES_NAME_HEIGHT};
+    char count[16] = "";
+    if (row->reps > 1)
+        snprintf(count, sizeof(count), "(x%d)", row->reps - rep);
+    const float countGap = count[0] ? 4 : 0;
+
     // Shrink names that don't fit the row, keeping them on the same baseline
-    const float maxNameW = MOVES_LIST_WIDTH - 12;
-    if (nameRect.w > maxNameW)
-    {
-        nameRect.h = MOVES_NAME_HEIGHT * maxNameW / nameRect.w;
-        nameRect.y += MOVES_NAME_HEIGHT - nameRect.h;
-        nameRect.w = maxNameW;
-    }
+    float height = MOVES_NAME_HEIGHT;
+    float totalW = w * height / h + countGap + _numberWidth(count, height);
+    const float maxW = MOVES_LIST_WIDTH - 12;
+    if (totalW > maxW)
+        height = height * maxW / totalW;
+
+    SDL_FRect nameRect = {MOVES_LIST_X + 8, y + 3 + MOVES_NAME_HEIGHT - height, w * height / h, height};
     SDL_SetTextureColorMod(name, nameColor.r, nameColor.g, nameColor.b);
     SDL_RenderTexture(renderer, name, NULL, &nameRect);
+
+    if (count[0])
+    {
+        float right = nameRect.x + nameRect.w + countGap + _numberWidth(count, height);
+        _drawNumber(renderer, count, right, nameRect.y, height, nameColor);
+    }
 
     float iconX = MOVES_LIST_X + 8;
     float iconY = y + MOVES_NAME_HEIGHT + 6;
@@ -534,18 +564,18 @@ static void _renderMoveRow(SDL_Renderer *renderer, MoveType move, float y, bool 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }
 
-// Draws the next MOVES_SHOWN moves, current one on top. When a move is
+// Draws the next MOVES_SHOWN rows, current one on top. When a row is
 // finished the list scrolls up one row.
 void _renderMoves(SDL_Renderer *renderer)
 {
-    static int seenMovesDone = 0;
+    static int seenRowsDone = 0;
     static float scroll = 0;
 
     const MoveString *m = &gamestate.moves;
-    if (m->moves_done != seenMovesDone)
+    if (m->rows_done != seenRowsDone)
     {
-        scroll = m->moves_done > seenMovesDone ? MOVES_ROW_HEIGHT : 0;
-        seenMovesDone = m->moves_done;
+        scroll = m->rows_done > seenRowsDone ? MOVES_ROW_HEIGHT : 0;
+        seenRowsDone = m->rows_done;
     }
 
     // Box around the current move
@@ -562,14 +592,14 @@ void _renderMoves(SDL_Renderer *renderer)
     SDL_Rect clip = {MOVES_LIST_X, MOVES_LIST_Y, MOVES_LIST_WIDTH, MOVES_ROW_HEIGHT * MOVES_SHOWN};
     SDL_SetRenderClipRect(renderer, &clip);
 
-    // The move just finished scrolls out the top
+    // The row just finished scrolls out the top
     if (scroll > 0)
-        _renderMoveRow(renderer, m->last_move, MOVES_LIST_Y + scroll - MOVES_ROW_HEIGHT, false, 0, false);
+        _renderMoveRow(renderer, &m->last_row, 0, MOVES_LIST_Y + scroll - MOVES_ROW_HEIGHT, false, 0, false);
 
     for (int i = 0; i < MOVES_SHOWN; i++)
     {
         bool current = i == 0;
-        _renderMoveRow(renderer, m->queue[i], MOVES_LIST_Y + i * MOVES_ROW_HEIGHT + scroll,
+        _renderMoveRow(renderer, &m->queue[i], current ? m->rep : 0, MOVES_LIST_Y + i * MOVES_ROW_HEIGHT + scroll,
             current, current ? m->step : 0, current && gamestate.last_input_acc == FAIL);
     }
 
