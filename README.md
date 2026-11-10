@@ -34,9 +34,9 @@ f, n, f.
 | BACKDASH      | b, n, b                            |
 | BACKDASH KBD  | b, n, b, db, b, n, b               |
 | SIDESTEP UP   | tap u (let go within 15 frames)    |
-| SIDEWALK UP   | u, n, u and hold for 15 frames     |
+| SIDEWALK UP   | u, n, u                            |
 | SIDESTEP DOWN | tap d (let go within 15 frames)    |
-| SIDEWALK DOWN | d, n, d and hold for 15 frames     |
+| SIDEWALK DOWN | d, n, d                            |
 | DASH          | f, n, f                            |
 | WVD           | f, n, d, df, f                     |
 | DASH WVD      | f, n, f, n, d, df, f               |
@@ -45,8 +45,8 @@ f, n, f.
 A backdash and the side steps and walks never come up twice in a row (two
 backdashes in a row is a KBD), and a backdash never comes right after a KBD.
 KBD and wave dash can repeat. Two dashes in a row always have a BLOCK between
-them. The bar next to a side step or walk fills while you hold the input; a
-side step has to let go before it fills.
+them. The bar next to a side step fills while you hold the input; let go
+before it fills.
 
 
 ## Building

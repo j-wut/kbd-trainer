@@ -97,14 +97,12 @@ typedef enum {
 // How the last input of a move has to be held
 typedef enum {
     HOLD_ANY = 0,
-    // Released before SIDE_WALK_FRAMES (side step)
-    HOLD_TAP,
-    // Held for SIDE_WALK_FRAMES (side walk, after the double tap)
-    HOLD_LONG
+    // Released within SIDE_STEP_FRAMES (side step)
+    HOLD_TAP
 } MoveHold;
 
-// Frames that separate a side step tap from a side walk hold
-#define SIDE_WALK_FRAMES 15
+// A side step has to be let go within this many frames
+#define SIDE_STEP_FRAMES 15
 
 #define MAX_MOVE_STEPS 7
 

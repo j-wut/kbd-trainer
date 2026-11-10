@@ -528,9 +528,9 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
         iconX += MOVES_ICON_SIZE + 3;
     }
 
-    // Side step / walk: a bar showing how long the input is held. Full means
-    // it's a side walk, so a side step has to let go before it fills.
-    if (info->hold == HOLD_ANY)
+    // Side step: a bar showing how long the input is held. It has to be let
+    // go before the bar fills.
+    if (info->hold != HOLD_TAP)
         return;
 
     const float barX = iconX + 4;
@@ -544,21 +544,11 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
 
     if (current && stepsDone == info->step_count)
     {
-        float fill = (float)gamestate.held_frames / SIDE_WALK_FRAMES;
+        float fill = (float)gamestate.held_frames / SIDE_STEP_FRAMES;
         if (fill > 1)
             fill = 1;
-        if (info->hold == HOLD_LONG)
-            SDL_SetRenderDrawColor(renderer, 51, 200, 51, 255);
-        else
-            SDL_SetRenderDrawColor(renderer, 230, 200, 51, 255);
+        SDL_SetRenderDrawColor(renderer, 230, 200, 51, 255);
         SDL_FRect bar = {barX, barY, barW * fill, barH};
-        SDL_RenderFillRect(renderer, &bar);
-    }
-    else if (info->hold == HOLD_LONG)
-    {
-        // Show the walk bar as a target to fill
-        SDL_SetRenderDrawColor(renderer, 40, 90, 40, 255);
-        SDL_FRect bar = {barX + 1, barY + 1, barW - 2, barH - 2};
         SDL_RenderFillRect(renderer, &bar);
     }
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);

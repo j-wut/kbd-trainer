@@ -279,9 +279,9 @@ const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_BACK_DASH]      = {"BACKDASH",      {BACK, NEUTRAL, BACK}, 3, HOLD_ANY},
     [MOVE_KBD]            = {"KBD",           {BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 5, HOLD_ANY},
     [MOVE_SIDE_STEP_UP]   = {"SIDESTEP UP",   {UP}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_UP]   = {"SIDEWALK UP",   {UP, NEUTRAL, UP}, 3, HOLD_LONG},
+    [MOVE_SIDE_WALK_UP]   = {"SIDEWALK UP",   {UP, NEUTRAL, UP}, 3, HOLD_ANY},
     [MOVE_SIDE_STEP_DOWN] = {"SIDESTEP DOWN", {DOWN}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN, NEUTRAL, DOWN}, 3, HOLD_LONG},
+    [MOVE_SIDE_WALK_DOWN] = {"SIDEWALK DOWN", {DOWN, NEUTRAL, DOWN}, 3, HOLD_ANY},
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
     [MOVE_WAVE_DASH]      = {"WVD",           {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
@@ -519,22 +519,12 @@ void _updateMoves(ControllerState *cs)
     bool changed = cs->direction != prev_input.direction;
     prev_input.direction = cs->direction;
 
-    // Last input of a side step / walk is down: check how long it's held
-    if (m->step == move->step_count && move->hold != HOLD_ANY)
+    // A side step's input is down: it has to be let go in time
+    if (m->step == move->step_count && move->hold == HOLD_TAP)
     {
         GameDirection held = GetMoveStep(_currentMove(), m->step - 1);
-        bool long_enough = cs->direction == held && gamestate.held_frames >= SIDE_WALK_FRAMES;
+        bool long_enough = cs->direction == held && gamestate.held_frames >= SIDE_STEP_FRAMES;
 
-        if (move->hold == HOLD_LONG)
-        {
-            if (long_enough)
-                _completeMove();
-            else if (changed)
-                _missMove(cs->direction);
-            return;
-        }
-
-        // HOLD_TAP
         if (long_enough)
         {
             _missMove(cs->direction);
