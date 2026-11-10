@@ -41,13 +41,17 @@ int main()
     else
         printf("No compatible controller detected. Using keyboard inputs (WASD)\n");
     
-    SDL_CreateWindowAndRenderer("KBD Trainer", INITIAL_VIEW_WIDTH, WINDOW_HEIGHT, 0, &window, &renderer);
+    SDL_CreateWindowAndRenderer("KBD Trainer", INITIAL_VIEW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer);
     if (window == NULL)
     {
         printf("Error creating window: %s\n", SDL_GetError());
         SDL_Delay(2000);
         return 1;
     }
+
+    // Draw at the original size and scale it to fit the window, keeping the
+    // aspect ratio (black bars fill the rest)
+    SDL_SetRenderLogicalPresentation(renderer, INITIAL_VIEW_WIDTH, WINDOW_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     
     InitGame();
     
