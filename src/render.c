@@ -472,13 +472,15 @@ static float _numberWidth(const char *text, float height)
 
 // Draws one row of the movement string: its name (with "(xN)" when it
 // repeats), and the inputs of one rep under it. For the current row, N
-// counts the reps left, the inputs are for the rep being done (a KBD after
-// the first one has no back dash) and inputs already done are dimmed.
+// counts the reps left, the name and inputs are for the rep being done (a
+// KBD after the first one has no back dash) and inputs already done are
+// dimmed.
 static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, float y, bool current, int stepsDone, bool missed)
 {
     MoveType move = GetRowMove(row, rep);
     const MoveInfo *info = &move_info[move];
-    MoveType nameMove = GetNameMove(row->type);
+    // After the first rep, the name drops the dash / back dash ("KBD (x2)")
+    MoveType nameMove = GetNameMove(move);
 
     SDL_Color nameColor = current ? (SDL_Color){255, 255, 255, 255} : (SDL_Color){150, 150, 150, 255};
 
