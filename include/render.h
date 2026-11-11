@@ -44,6 +44,20 @@
 
 #define WINDOW_HEIGHT (INITIAL_VIEW_HEIGHT + STATS_PANEL_HEIGHT)
 
+// Random movement string list, on the left of the game view
+#define MOVES_ROW_HEIGHT 44
+#define MOVES_LIST_X SIDE_PADDING
+#define MOVES_LIST_Y VERT_PADDING
+#define MOVES_LIST_WIDTH 200
+#define MOVES_NAME_HEIGHT 21
+#define MOVES_ICON_SIZE 15
+// Frames the list takes to scroll up one row
+#define MOVES_SCROLL_FRAMES 6
+// Score panel to the right of the list
+#define MOVES_SCORE_X (MOVES_LIST_X + MOVES_LIST_WIDTH + 15)
+#define MOVES_SCORE_WIDTH (GAME_AREA_WIDTH - SIDE_PADDING / 2 - 15 - MOVES_SCORE_X)
+#define MOVES_SCORE_HEIGHT 31
+
 static const char * _directionAssets[9] = {
     [0] = "assets/n.png",
     [1] = "assets/u.png",
@@ -72,3 +86,4 @@ void _playFailAnimation(SDL_Renderer *);
 void _updateScore(SDL_Renderer *rendrerer);
 void _renderInputHistory(SDL_Renderer *);
 void _renderStepStats(SDL_Renderer *);
+void _renderMoves(SDL_Renderer *);

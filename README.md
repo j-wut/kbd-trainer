@@ -9,6 +9,51 @@ downback. LAST is the most recent rep, and AVG, MIN and MAX cover the last 10
 reps. The stats reset when you pick a mode from the menu.
 
 
+## Movement string mode
+P1 MOVES and P2 MOVES show a random string of movement options, five at a
+time. Input each move in order; the list scrolls up as you finish one. Every
+finished move is worth 100 points, and the run ends on the first wrong input.
+Wrong inputs before the first move starts are ignored, and between moves you
+can go back to neutral or let go of part of the last input.
+
+Inputs are for the P1 side (P2 swaps forward and back). SS is a side step
+and SW a side walk, named by the side they go to: on the P1 side up is left
+(SSL, SWL) and down is right (SSR, SWR). On the P2 side it's the other way.
+
+A KBD chain always starts with its backdash, shown as one BACKDASH KBD row
+(b, n, b, db, b, n, b), and a dash into a wave dash is one DASH WVD row (the
+dash's second f is the wave dash's first f).
+
+KBDs and wave dashes in a row share one row with a count, e.g. WVD (x3),
+DASH WVD (x2) or BACKDASH KBD (x2). The count goes down as you finish each one,
+and the row's color shows how many are left: purple (4), blue (3), light blue
+(2) and white for the last one.
+Each KBD after the first is b, db, b, n, b, where the first b is the last b of
+the KBD before, so BACKDASH KBD (x2) is b, n, b, db, b, n, b, db, b, n, b. Each
+wave dash after the first needs a neutral before its f. After a wave dash, the
+next row needs a neutral first too: wave dash into dash is f, n, d, df, f, n,
+f, n, f.
+
+| Move          | Input                              |
+|---------------|------------------------------------|
+| BACKDASH      | b, n, b                            |
+| BACKDASH KBD  | b, n, b, db, b, n, b               |
+| SSL / SSR     | tap u / d (let go within 15 frames) |
+| SWL / SWR     | u, n, u / d, n, d (first tap within 15 frames) |
+| DASH          | f, n, f                            |
+| WVD           | f, n, d, df, f                     |
+| DASH WVD      | f, n, f, n, d, df, f               |
+| BLOCK         | b (between two dashes, or side moves that switch direction) |
+
+A backdash and the side steps and walks never come up twice in a row (two
+backdashes in a row is a KBD), and a backdash never comes right after a KBD.
+A side step and side walk in the same direction never follow each other, and
+a side step or walk into one going the other way has a BLOCK between them.
+KBD and wave dash can repeat. Two dashes in a row always have a BLOCK between
+them. The bar next to a side step or walk fills while you hold its first
+input; let go before it fills.
+
+
 ## Building
 You need CMake 3.16+ and a C compiler. If SDL3, SDL3_image and SDL3_ttf are
 installed, CMake uses them. If not, CMake downloads and builds them for you, so
