@@ -481,6 +481,29 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
     MoveType nameMove = GetNameMove(row->type);
 
     SDL_Color nameColor = current ? (SDL_Color){255, 255, 255, 255} : (SDL_Color){150, 150, 150, 255};
+
+    // Repeated rows are colored by the reps left: purple, blue, light blue,
+    // then white for the last one. Rows coming up are a darker shade.
+    if (row->reps > 1)
+    {
+        static const SDL_Color repColors[MAX_ROW_REPS] = {
+            {255, 255, 255, 255},
+            {140, 210, 255, 255},
+            {60, 120, 255, 255},
+            {180, 70, 255, 255},
+        };
+        int left = row->reps - rep;
+        if (left > MAX_ROW_REPS)
+            left = MAX_ROW_REPS;
+        nameColor = repColors[left - 1];
+        if (!current)
+        {
+            nameColor.r = nameColor.r * 2 / 3;
+            nameColor.g = nameColor.g * 2 / 3;
+            nameColor.b = nameColor.b * 2 / 3;
+        }
+    }
+
     if (missed)
         nameColor = (SDL_Color){255, 51, 51, 255};
 

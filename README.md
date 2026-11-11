@@ -25,7 +25,9 @@ A KBD chain always starts with its backdash, shown as one BACKDASH KBD row
 dash's second f is the wave dash's first f).
 
 KBDs and wave dashes in a row share one row with a count, e.g. WVD (x3),
-DASH WVD (x2) or BACKDASH KBD (x2). The count goes down as you finish each one.
+DASH WVD (x2) or BACKDASH KBD (x2). The count goes down as you finish each one,
+and the row's color shows how many are left: purple (4), blue (3), light blue
+(2) and white for the last one.
 Each KBD after the first is b, db, b, n, b, where the first b is the last b of
 the KBD before, so BACKDASH KBD (x2) is b, n, b, db, b, n, b, db, b, n, b. Each
 wave dash after the first needs a neutral before its f. After a wave dash, the
