@@ -553,9 +553,9 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
         iconX += MOVES_ICON_SIZE + 3;
     }
 
-    // Side step: a bar showing how long the input is held. It has to be let
-    // go before the bar fills.
-    if (info->hold != HOLD_TAP)
+    // Side step / walk: a bar showing how long the first input is held. It
+    // has to be let go before the bar fills.
+    if (!info->first_tap)
         return;
 
     const float barX = iconX + 4;
@@ -567,7 +567,7 @@ static void _renderMoveRow(SDL_Renderer *renderer, const MoveRow *row, int rep, 
     SDL_FRect track = {barX, barY, barW, barH};
     SDL_RenderRect(renderer, &track);
 
-    if (current && stepsDone == info->step_count)
+    if (current && stepsDone == 1 && gamestate.held_direction == GetMoveStep(move, 0))
     {
         float fill = (float)gamestate.held_frames / SIDE_STEP_FRAMES;
         if (fill > 1)

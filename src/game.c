@@ -278,10 +278,10 @@ StepSummary GetStepSummary(int step)
 const MoveInfo move_info[MOVE_TYPE_COUNT] = {
     [MOVE_BACK_DASH]      = {"BACKDASH",      {BACK, NEUTRAL, BACK}, 3, HOLD_ANY},
     [MOVE_KBD]            = {"KBD",           {BACK, DOWN_BACK, BACK, NEUTRAL, BACK}, 5, HOLD_ANY},
-    [MOVE_SIDE_STEP_UP]   = {"SSL",           {UP}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_UP]   = {"SWL",           {UP, NEUTRAL, UP}, 3, HOLD_ANY},
-    [MOVE_SIDE_STEP_DOWN] = {"SSR",           {DOWN}, 1, HOLD_TAP},
-    [MOVE_SIDE_WALK_DOWN] = {"SWR",           {DOWN, NEUTRAL, DOWN}, 3, HOLD_ANY},
+    [MOVE_SIDE_STEP_UP]   = {"SSL",           {UP}, 1, HOLD_TAP, true},
+    [MOVE_SIDE_WALK_UP]   = {"SWL",           {UP, NEUTRAL, UP}, 3, HOLD_ANY, true},
+    [MOVE_SIDE_STEP_DOWN] = {"SSR",           {DOWN}, 1, HOLD_TAP, true},
+    [MOVE_SIDE_WALK_DOWN] = {"SWR",           {DOWN, NEUTRAL, DOWN}, 3, HOLD_ANY, true},
     [MOVE_FORWARD_DASH]   = {"DASH",          {FORWARD, NEUTRAL, FORWARD}, 3, HOLD_ANY},
     [MOVE_WAVE_DASH]      = {"WVD",           {FORWARD, NEUTRAL, DOWN, DOWN_FORWARD, FORWARD}, 5, HOLD_ANY},
     [MOVE_BLOCK]          = {"BLOCK",         {BACK}, 1, HOLD_ANY},
@@ -372,6 +372,16 @@ static bool _sameSide(MoveType a, MoveType b)
         || (a == MOVE_SIDE_WALK_DOWN && b == MOVE_SIDE_STEP_DOWN);
 }
 
+// Side step or walk direction: 1 for up, -1 for down, 0 for other moves
+static int _sideDirection(MoveType move)
+{
+    if (move == MOVE_SIDE_STEP_UP || move == MOVE_SIDE_WALK_UP)
+        return 1;
+    if (move == MOVE_SIDE_STEP_DOWN || move == MOVE_SIDE_WALK_DOWN)
+        return -1;
+    return 0;
+}
+
 // Picks the row to follow `prev` (MOVE_TYPE_COUNT for the first row):
 // - back dash and the side steps / walks never repeat (two back dashes is a KBD),
 //   and a side step and side walk in the same direction never follow each other
@@ -381,6 +391,7 @@ static bool _sameSide(MoveType a, MoveType b)
 // - wave dashes in a row are one row with the count, so a WVD row never
 //   follows a WVD or DASH WVD row
 // - two moves in a row that start with a dash need a block in between
+// - a side step or walk into one going the other way needs a block in between
 static MoveRow _nextRow(MoveType prev)
 {
     MoveString *m = &gamestate.moves;
@@ -432,6 +443,13 @@ static MoveRow _nextRow(MoveType prev)
         // Side steps and walks don't repeat
         if ((next == prev && next != MOVE_DASH_WAVE_DASH) || _sameSide(prev, next))
             continue;
+
+        if (_sideDirection(prev) * _sideDirection(next) < 0)
+        {
+            m->pending = next;
+            row.type = MOVE_BLOCK;
+            return row;
+        }
 
         row.type = next;
         if (next == MOVE_BACK_DASH_KBD || next == MOVE_WAVE_DASH || next == MOVE_DASH_WAVE_DASH)
@@ -542,6 +560,14 @@ void _updateMoves(ControllerState *cs)
     const MoveInfo *move = &move_info[_currentMove()];
     bool changed = cs->direction != prev_input.direction;
     prev_input.direction = cs->direction;
+
+    // First input of a side step or walk held too long: that's not a tap
+    if (move->first_tap && m->step == 1 && cs->direction == GetMoveStep(_currentMove(), 0)
+        && gamestate.held_frames >= SIDE_STEP_FRAMES)
+    {
+        _missMove(cs->direction);
+        return;
+    }
 
     // A side step's input is down: it has to be let go in time
     if (m->step == move->step_count && move->hold == HOLD_TAP)

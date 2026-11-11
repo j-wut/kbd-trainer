@@ -101,7 +101,8 @@ typedef enum {
     HOLD_TAP
 } MoveHold;
 
-// A side step has to be let go within this many frames
+// A side step (or a side walk's first tap) has to be let go within this
+// many frames
 #define SIDE_STEP_FRAMES 15
 
 #define MAX_MOVE_STEPS 7
@@ -112,6 +113,9 @@ typedef struct {
     GameDirection steps[MAX_MOVE_STEPS];
     int step_count;
     MoveHold hold;
+    // The first input has to be let go within SIDE_STEP_FRAMES (side steps
+    // and the first tap of side walks)
+    bool first_tap;
 } MoveInfo;
 
 extern const MoveInfo move_info[MOVE_TYPE_COUNT];
